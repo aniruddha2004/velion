@@ -1,0 +1,23 @@
+default_platform(:android)
+
+platform :android do
+  desc "Deploy a new internal version to Google Play"
+  lane :deploy_internal do
+    gradle(task: "bundleRelease")
+    upload_to_play_store(
+      track: 'internal',
+      release_status: 'draft',
+      aab: '../build/app/outputs/bundle/release/app-release.aab'
+    )
+  end
+  
+  desc "Deploy a new alpha version to Google Play"
+  lane :deploy_alpha do
+    gradle(task: "bundleRelease")
+    upload_to_play_store(
+      track: 'alpha',
+      release_status: 'completed',
+      aab: '../build/app/outputs/bundle/release/app-release.aab'
+    )
+  end
+end
