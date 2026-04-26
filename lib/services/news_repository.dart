@@ -1,6 +1,7 @@
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 import '../models/news_article.dart';
+import 'category_service.dart';
 
 class NewsRepository {
   static final NewsRepository _instance = NewsRepository._internal();
@@ -22,8 +23,23 @@ class NewsRepository {
     return articles;
   }
 
-  Future<List<NewsArticle>> getUnreadArticles() async {
+  Future<List<NewsArticle>> getActiveArticles() async {
     final articles = await getAllArticles();
+    return articles.where((a) => !a.isArchived).toList();
+  }
+
+  Future<List<NewsArticle>> getArchivedArticles() async {
+    final articles = await getAllArticles();
+    return articles.where((a) => a.isArchived).toList();
+  }
+
+  Future<List<NewsArticle>> getArticlesByCategory(String category) async {
+    final articles = await getActiveArticles();
+    return articles.where((a) => a.category == category).toList();
+  }
+
+  Future<List<NewsArticle>> getUnreadArticles() async {
+    final articles = await getActiveArticles();
     return articles.where((a) => !a.isRead).toList();
   }
 
@@ -39,9 +55,18 @@ class NewsRepository {
     String? imageUrl,
     String? faviconUrl,
     String? siteName,
+    String? category,
   }) async {
     final box = await _newsBox;
-    
+
+    // Auto-categorize if no category provided
+    final autoCategory = category ?? CategoryService.categorize(
+      url: url,
+      title: title,
+      description: description,
+      siteName: siteName,
+    );
+
     final article = NewsArticle(
       id: _uuid.v4(),
       url: url,
@@ -51,6 +76,7 @@ class NewsRepository {
       faviconUrl: faviconUrl,
       siteName: siteName,
       addedAt: DateTime.now(),
+      category: autoCategory,
     );
 
     await box.put(article.id, article);
@@ -80,6 +106,33 @@ class NewsRepository {
     }
   }
 
+  Future<void> archiveArticle(String id) async {
+    final box = await _newsBox;
+    final article = box.get(id);
+    if (article != null) {
+      article.isArchived = true;
+      await article.save();
+    }
+  }
+
+  Future<void> unarchiveArticle(String id) async {
+    final box = await _newsBox;
+    final article = box.get(id);
+    if (article != null) {
+      article.isArchived = false;
+      await article.save();
+    }
+  }
+
+  Future<void> changeCategory(String id, String newCategory) async {
+    final box = await _newsBox;
+    final article = box.get(id);
+    if (article != null) {
+      article.category = newCategory;
+      await article.save();
+    }
+  }
+
   Future<void> deleteArticle(String id) async {
     final box = await _newsBox;
     await box.delete(id);
@@ -91,12 +144,22 @@ class NewsRepository {
   }
 
   Future<int> getArticleCount() async {
-    final box = await _newsBox;
-    return box.length;
+    final articles = await getActiveArticles();
+    return articles.length;
   }
 
   Future<int> getUnreadCount() async {
-    final articles = await getAllArticles();
+    final articles = await getActiveArticles();
     return articles.where((a) => !a.isRead).length;
+  }
+
+  Future<int> getCategoryCount(String category) async {
+    final articles = await getActiveArticles();
+    return articles.where((a) => a.category == category).length;
+  }
+
+  Future<int> getArchivedCount() async {
+    final articles = await getArchivedArticles();
+    return articles.length;
   }
 }

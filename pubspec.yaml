@@ -36,6 +36,7 @@ dependencies:
   
   # Performance
   flutter_staggered_animations: ^1.1.1
+  share_plus: ^7.2.2
 
 dev_dependencies:
   flutter_test:

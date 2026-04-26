@@ -9,7 +9,22 @@ final linkPreviewServiceProvider = Provider((ref) => LinkPreviewService());
 
 final articlesProvider = FutureProvider<List<NewsArticle>>((ref) async {
   final repository = ref.watch(newsRepositoryProvider);
-  return await repository.getAllArticles();
+  return await repository.getActiveArticles();
+});
+
+final archivedArticlesProvider = FutureProvider<List<NewsArticle>>((ref) async {
+  final repository = ref.watch(newsRepositoryProvider);
+  return await repository.getArchivedArticles();
+});
+
+final techArticlesProvider = FutureProvider<List<NewsArticle>>((ref) async {
+  final repository = ref.watch(newsRepositoryProvider);
+  return await repository.getArticlesByCategory('tech');
+});
+
+final generalArticlesProvider = FutureProvider<List<NewsArticle>>((ref) async {
+  final repository = ref.watch(newsRepositoryProvider);
+  return await repository.getArticlesByCategory('general');
 });
 
 final unreadArticlesProvider = FutureProvider<List<NewsArticle>>((ref) async {
@@ -25,6 +40,21 @@ final articleCountProvider = FutureProvider<int>((ref) async {
 final unreadCountProvider = FutureProvider<int>((ref) async {
   final repository = ref.watch(newsRepositoryProvider);
   return await repository.getUnreadCount();
+});
+
+final techCountProvider = FutureProvider<int>((ref) async {
+  final repository = ref.watch(newsRepositoryProvider);
+  return await repository.getCategoryCount('tech');
+});
+
+final generalCountProvider = FutureProvider<int>((ref) async {
+  final repository = ref.watch(newsRepositoryProvider);
+  return await repository.getCategoryCount('general');
+});
+
+final archivedCountProvider = FutureProvider<int>((ref) async {
+  final repository = ref.watch(newsRepositoryProvider);
+  return await repository.getArchivedCount();
 });
 
 class AddArticleState {
@@ -94,10 +124,7 @@ class AddArticleNotifier extends StateNotifier<AddArticleState> {
       );
 
       state = state.copyWith(isLoading: false);
-      _ref.invalidate(articlesProvider);
-      _ref.invalidate(unreadArticlesProvider);
-      _ref.invalidate(articleCountProvider);
-      _ref.invalidate(unreadCountProvider);
+      _invalidateAll();
 
       return article;
     } catch (e) {
@@ -108,6 +135,19 @@ class AddArticleNotifier extends StateNotifier<AddArticleState> {
 
   void clearError() {
     state = state.copyWith(error: null);
+  }
+
+  void _invalidateAll() {
+    _ref.invalidate(articlesProvider);
+    _ref.invalidate(archivedArticlesProvider);
+    _ref.invalidate(techArticlesProvider);
+    _ref.invalidate(generalArticlesProvider);
+    _ref.invalidate(unreadArticlesProvider);
+    _ref.invalidate(articleCountProvider);
+    _ref.invalidate(unreadCountProvider);
+    _ref.invalidate(techCountProvider);
+    _ref.invalidate(generalCountProvider);
+    _ref.invalidate(archivedCountProvider);
   }
 }
 
