@@ -16,7 +16,7 @@ void main() async {
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
-    systemNavigationBarColor: Color(0xFF0F0F1A),
+    systemNavigationBarColor: const Color(0xFF0B0D12),
     systemNavigationBarIconBrightness: Brightness.light,
   ));
 
@@ -41,28 +41,30 @@ class VelionApp extends StatelessWidget {
   }
 
   ThemeData _buildDarkTheme() {
-    const darkBg = Color(0xFF0F0F1A);
-    const cardBg = Color(0xFF1A1A2E);
-    const surfaceVariant = Color(0xFF252540);
-    const primaryViolet = Color(0xFF6C63FF);
-    const primaryBlue = Color(0xFF3B82F6);
-    const accentCyan = Color(0xFF00D9FF);
+    // Brand colors from Velion logo.html (open-codesign)
+    const darkBg = Color(0xFF0B0D12);            // Main background
+    const cardBg = Color(0xFF16181F);             // Card surface
+    const surfaceVariant = Color(0xFF1E2029);     // Input/surface variant
+    const accentViolet = Color(0xFF6878FF);       // Primary accent from logo
+    const accentLight = Color(0xFFF4F6FB);        // Light accent / text
+    const subtitleColor = Color(0xFFA6ADBD);      // Subtitle color from logo
+    const borderFaint = Color(0x14FFFFFF);         // rgba(255,255,255,0.08)
 
     return ThemeData(
       brightness: Brightness.dark,
       scaffoldBackgroundColor: darkBg,
       colorScheme: const ColorScheme.dark(
-        primary: primaryViolet,
+        primary: accentViolet,
         onPrimary: Colors.white,
-        secondary: primaryBlue,
+        secondary: Color(0xFF3B82F6),
         onSecondary: Colors.white,
         surface: cardBg,
-        onSurface: Colors.white,
+        onSurface: accentLight,
         surfaceVariant: surfaceVariant,
         error: Color(0xFFFF5252),
         onError: Colors.white,
-        outline: Color(0xFF3D3D5C),
-        onSurfaceVariant: Color(0xFF9E9EBF),
+        outline: Color(0xFF2A2C38),
+        onSurfaceVariant: subtitleColor,
       ),
       cardTheme: CardTheme(
         color: cardBg,
@@ -85,16 +87,16 @@ class VelionApp extends StatelessWidget {
         iconTheme: IconThemeData(color: Colors.white),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Color(0xFF0F0F1A),
-        selectedItemColor: primaryViolet,
-        unselectedItemColor: Color(0xFF5A5A7A),
+        backgroundColor: Color(0xFF0B0D12),
+        selectedItemColor: accentViolet,
+        unselectedItemColor: Color(0xFF5A5A6A),
         type: BottomNavigationBarType.fixed,
         elevation: 0,
         selectedLabelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
         unselectedLabelStyle: TextStyle(fontSize: 11),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: primaryViolet,
+        backgroundColor: accentViolet,
         foregroundColor: Colors.white,
         elevation: 4,
         shape: RoundedRectangleBorder(
@@ -114,7 +116,7 @@ class VelionApp extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: primaryViolet, width: 1.5),
+          borderSide: const BorderSide(color: accentViolet, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         hintStyle: const TextStyle(color: Color(0xFF5A5A7A)),

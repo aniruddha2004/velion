@@ -57,7 +57,7 @@ class _AddArticleScreenState extends ConsumerState<AddArticleScreen> {
     final addState = ref.watch(addArticleProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F1A),
+      backgroundColor: const Color(0xFF0B0D12),
       body: SafeArea(
         child: Column(
           children: [
@@ -69,7 +69,7 @@ class _AddArticleScreenState extends ConsumerState<AddArticleScreen> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded, color: Color(0xFF9E9EBF), size: 28),
+                    icon: const Icon(Icons.close_rounded, color: Color(0xFFA6ADBD), size: 28),
                   ),
                   Text(
                     'Add Article',
@@ -89,14 +89,14 @@ class _AddArticleScreenState extends ConsumerState<AddArticleScreen> {
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF6C63FF), Color(0xFF3B82F6)],
+                        colors: [Color(0xFF6878FF), Color(0xFF3B82F6)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF6C63FF).withOpacity(0.3),
+                          color: const Color(0xFF6878FF).withOpacity(0.3),
                           blurRadius: 24,
                           offset: const Offset(0, 8),
                         ),
@@ -137,9 +137,9 @@ class _AddArticleScreenState extends ConsumerState<AddArticleScreen> {
                 style: const TextStyle(color: Colors.white, fontSize: 16),
                 decoration: InputDecoration(
                   hintText: 'https://example.com/article',
-                  prefixIcon: const Icon(Icons.link_rounded, color: Color(0xFF6C63FF), size: 20),
+                  prefixIcon: const Icon(Icons.link_rounded, color: Color(0xFF6878FF), size: 20),
                   suffixIcon: IconButton(
-                    icon: const Icon(Icons.content_paste_rounded, color: Color(0xFF9E9EBF), size: 20),
+                    icon: const Icon(Icons.content_paste_rounded, color: Color(0xFFA6ADBD), size: 20),
                     onPressed: _pasteFromClipboard,
                     tooltip: 'Paste from clipboard',
                   ),
@@ -166,14 +166,14 @@ class _AddArticleScreenState extends ConsumerState<AddArticleScreen> {
                     gradient: addState.isLoading
                         ? null
                         : const LinearGradient(
-                            colors: [Color(0xFF6C63FF), Color(0xFF3B82F6)],
+                            colors: [Color(0xFF6878FF), Color(0xFF3B82F6)],
                           ),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: addState.isLoading
                         ? null
                         : [
                             BoxShadow(
-                              color: const Color(0xFF6C63FF).withOpacity(0.3),
+                              color: const Color(0xFF6878FF).withOpacity(0.3),
                               blurRadius: 16,
                               offset: const Offset(0, 6),
                             ),
@@ -229,7 +229,7 @@ class _AddArticleScreenState extends ConsumerState<AddArticleScreen> {
               onPressed: () => Navigator.pop(context),
               child: const Text(
                 'Cancel',
-                style: TextStyle(color: Color(0xFF5A5A7A)),
+                style: TextStyle(color: Color(0xFF5A5A6A)),
               ),
             ),
           ],

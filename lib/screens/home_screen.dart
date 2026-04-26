@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/news_article.dart';
 import '../providers/news_provider.dart';
 import '../widgets/link_preview_card.dart';
 import 'add_article_screen.dart';
@@ -12,44 +13,44 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
-  String _selectedFilter = 'All';
-  final List<String> _filters = ['All', 'Unread', 'Today', 'This Week'];
+class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
 
-  Future<void> _refreshArticles() async {
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _invalidateAll() {
     ref.invalidate(articlesProvider);
+    ref.invalidate(archivedArticlesProvider);
+    ref.invalidate(techArticlesProvider);
+    ref.invalidate(generalArticlesProvider);
+    ref.invalidate(unreadArticlesProvider);
+    ref.invalidate(articleCountProvider);
     ref.invalidate(unreadCountProvider);
+    ref.invalidate(techCountProvider);
+    ref.invalidate(generalCountProvider);
+    ref.invalidate(archivedCountProvider);
   }
 
-  List<dynamic> _applyFilter(List<dynamic> articles) {
-    final now = DateTime.now();
-    switch (_selectedFilter) {
-      case 'Unread':
-        return articles.where((a) => !a.isRead).toList();
-      case 'Today':
-        return articles.where((a) =>
-          a.addedAt.year == now.year &&
-          a.addedAt.month == now.month &&
-          a.addedAt.day == now.day
-        ).toList();
-      case 'This Week':
-        final weekAgo = now.subtract(const Duration(days: 7));
-        return articles.where((a) => a.addedAt.isAfter(weekAgo)).toList();
-      default:
-        return articles;
-    }
-  }
-
-  void _showDeleteConfirmation(dynamic article) {
+  void _showDeleteConfirmation(NewsArticle article) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
+        backgroundColor: const Color(0xFF16181F),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Delete Article', style: TextStyle(color: Colors.white)),
         content: const Text(
-          'Are you sure you want to delete this article?',
-          style: TextStyle(color: Color(0xFF9E9EBF)),
+          'This will permanently remove the article. Are you sure?',
+          style: TextStyle(color: Color(0xFFA6ADBD)),
         ),
         actions: [
           TextButton(
@@ -60,18 +61,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onPressed: () async {
               Navigator.pop(context);
               await ref.read(newsRepositoryProvider).deleteArticle(article.id);
-              ref.invalidate(articlesProvider);
-              ref.invalidate(unreadCountProvider);
-              ref.invalidate(articleCountProvider);
+              _invalidateAll();
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Article deleted')),
                 );
               }
             },
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFFF5252),
-            ),
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFFF5252)),
             child: const Text('DELETE'),
           ),
         ],
@@ -79,170 +76,174 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  void _showCategoryPicker(NewsArticle article) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF16181F),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Change Category', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _categoryOption(
+              label: 'Tech',
+              icon: Icons.computer_outlined,
+              gradient: const [Color(0xFF6878FF), Color(0xFF3B82F6)],
+              isSelected: article.category == 'tech',
+              onTap: () async {
+                Navigator.pop(context);
+                await ref.read(newsRepositoryProvider).changeCategory(article.id, 'tech');
+                _invalidateAll();
+              },
+            ),
+            const SizedBox(height: 10),
+            _categoryOption(
+              label: 'General',
+              icon: Icons.public_outlined,
+              gradient: const [Color(0xFF4ECDC4), Color(0xFF44B09E)],
+              isSelected: article.category == 'general',
+              onTap: () async {
+                Navigator.pop(context);
+                await ref.read(newsRepositoryProvider).changeCategory(article.id, 'general');
+                _invalidateAll();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _categoryOption({
+    required String label,
+    required IconData icon,
+    required List<Color> gradient,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? gradient[0].withOpacity(0.15) : const Color(0xFF1E2029),
+          borderRadius: BorderRadius.circular(14),
+          border: isSelected
+              ? Border.all(color: gradient[0], width: 1.5)
+              : Border.all(color: const Color(0xFF2A2C38), width: 0.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: gradient),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: Colors.white, size: 18),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : const Color(0xFFA6ADBD),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_circle, color: gradient[0], size: 22),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final articlesAsync = ref.watch(articlesProvider);
 
     return Scaffold(
       body: SafeArea(
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
+        child: Column(
+          children: [
             // Header
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'News Feed',
-                      style: theme.textTheme.headlineLarge,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('News Feed', style: theme.textTheme.headlineLarge),
+                  ),
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
                       'Your saved articles and stories',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF7A7A9A),
+                        color: const Color(0xFFA6ADBD),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+
+            // Category tabs
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Container(
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF16181F),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFF1E2029), width: 0.5),
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  labelPadding: EdgeInsets.zero,
+                  indicator: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF6878FF), Color(0xFF3B82F6)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicatorPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  tabAlignment: TabAlignment.fill,
+                  dividerColor: Colors.transparent,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: const Color(0xFFA6ADBD),
+                  labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, height: 1.0),
+                  unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13, height: 1.0),
+                  tabs: const [
+                    Tab(child: Text('All')),
+                    Tab(child: Text('Tech')),
+                    Tab(child: Text('General')),
                   ],
                 ),
               ),
             ),
 
-            // Filter chips
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: 44,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  itemCount: _filters.length,
-                  itemBuilder: (context, index) {
-                    final filter = _filters[index];
-                    final isSelected = filter == _selectedFilter;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 10),
-                      child: GestureDetector(
-                        onTap: () => setState(() => _selectedFilter = filter),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                          decoration: BoxDecoration(
-                            gradient: isSelected
-                                ? const LinearGradient(
-                                    colors: [Color(0xFF6C63FF), Color(0xFF3B82F6)],
-                                  )
-                                : null,
-                            color: isSelected ? null : const Color(0xFF252540),
-                            borderRadius: BorderRadius.circular(22),
-                          ),
-                          child: Text(
-                            filter,
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : const Color(0xFF9E9EBF),
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+            const SizedBox(height: 12),
+
+            // Article lists
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildArticleList(articlesProvider),
+                  _buildArticleList(techArticlesProvider),
+                  _buildArticleList(generalArticlesProvider),
+                ],
               ),
             ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-            // Articles list
-            articlesAsync.when(
-              data: (articles) {
-                final filtered = _applyFilter(articles);
-                if (filtered.isEmpty) {
-                  return SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 80),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.article_outlined,
-                            size: 72,
-                            color: const Color(0xFF3D3D5C),
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            articles.isEmpty ? 'No articles yet' : 'No matching articles',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: const Color(0xFF5A5A7A),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            articles.isEmpty
-                                ? 'Share a link from any app or tap the + button'
-                                : 'Try a different filter',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: const Color(0xFF3D3D5C),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-
-                return SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final article = filtered[index];
-                      return LinkPreviewCard(
-                        article: article,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ArticleDetailScreen(article: article),
-                          ),
-                        ),
-                        onLongPress: () => _showDeleteConfirmation(article),
-                      );
-                    },
-                    childCount: filtered.length,
-                  ),
-                );
-              },
-              loading: () => const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.all(40),
-                  child: Center(
-                    child: CircularProgressIndicator(color: Color(0xFF6C63FF)),
-                  ),
-                ),
-              ),
-              error: (error, _) => SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(40),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.error_outline, size: 48, color: Color(0xFFFF5252)),
-                      const SizedBox(height: 16),
-                      Text('Failed to load articles', style: theme.textTheme.titleMedium),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: _refreshArticles,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
         ),
       ),
@@ -250,16 +251,84 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         onPressed: () async {
           final result = await Navigator.push<bool>(
             context,
-            MaterialPageRoute(
-              builder: (context) => const AddArticleScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const AddArticleScreen()),
           );
-          if (result == true) {
-            _refreshArticles();
-          }
+          if (result == true) _invalidateAll();
         },
         child: const Icon(Icons.add_rounded, size: 28),
       ),
+    );
+  }
+
+  Widget _buildArticleList(FutureProvider<List<NewsArticle>> provider) {
+    final theme = Theme.of(context);
+    return Consumer(
+      builder: (context, ref, _) {
+        final articlesAsync = ref.watch(provider);
+        return RefreshIndicator(
+          onRefresh: () async => _invalidateAll(),
+          color: const Color(0xFF6878FF),
+          backgroundColor: const Color(0xFF16181F),
+          child: articlesAsync.when(
+            data: (articles) {
+              if (articles.isEmpty) {
+                return ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 80),
+                      child: Column(
+                        children: [
+                          Icon(Icons.article_outlined, size: 72, color: const Color(0xFF2A2C38)),
+                          const SizedBox(height: 20),
+                          Text(
+                            'No articles yet',
+                            style: theme.textTheme.titleMedium?.copyWith(color: const Color(0xFF5A5A6A)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }
+              return ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: articles.length,
+                itemBuilder: (context, index) {
+                  final article = articles[index];
+                  return LinkPreviewCard(
+                    article: article,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ArticleDetailScreen(article: article),
+                      ),
+                    ),
+                    onArchive: () async {
+                      await ref.read(newsRepositoryProvider).archiveArticle(article.id);
+                      _invalidateAll();
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Article archived')),
+                        );
+                      }
+                    },
+                    onDelete: () => _showDeleteConfirmation(article),
+                    onChangeCategory: () => _showCategoryPicker(article),
+                  );
+                },
+              );
+            },
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(40),
+                child: CircularProgressIndicator(color: Color(0xFF6878FF)),
+              ),
+            ),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+        );
+      },
     );
   }
 }

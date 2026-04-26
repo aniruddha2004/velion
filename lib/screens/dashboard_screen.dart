@@ -21,6 +21,8 @@ class DashboardScreen extends ConsumerWidget {
     final articlesAsync = ref.watch(articlesProvider);
     final unreadCountAsync = ref.watch(unreadCountProvider);
     final articleCountAsync = ref.watch(articleCountProvider);
+    final techCountAsync = ref.watch(techCountProvider);
+    final generalCountAsync = ref.watch(generalCountProvider);
 
     return Scaffold(
       body: Stack(
@@ -36,7 +38,7 @@ class DashboardScreen extends ConsumerWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF6C63FF).withOpacity(0.15),
+                    const Color(0xFF6878FF).withOpacity(0.15),
                     const Color(0xFF3B82F6).withOpacity(0.05),
                     Colors.transparent,
                   ],
@@ -66,11 +68,17 @@ class DashboardScreen extends ConsumerWidget {
             child: RefreshIndicator(
               onRefresh: () async {
                 ref.invalidate(articlesProvider);
+                ref.invalidate(archivedArticlesProvider);
+                ref.invalidate(techArticlesProvider);
+                ref.invalidate(generalArticlesProvider);
                 ref.invalidate(unreadCountProvider);
                 ref.invalidate(articleCountProvider);
+                ref.invalidate(techCountProvider);
+                ref.invalidate(generalCountProvider);
+                ref.invalidate(archivedCountProvider);
               },
-              color: const Color(0xFF6C63FF),
-              backgroundColor: const Color(0xFF1A1A2E),
+              color: const Color(0xFF6878FF),
+              backgroundColor: const Color(0xFF16181F),
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
@@ -89,7 +97,7 @@ class DashboardScreen extends ConsumerWidget {
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
                                   gradient: const LinearGradient(
-                                    colors: [Color(0xFF6C63FF), Color(0xFF3B82F6)],
+                                    colors: [Color(0xFF6878FF), Color(0xFF3B82F6)],
                                   ),
                                   borderRadius: BorderRadius.circular(14),
                                 ),
@@ -102,12 +110,12 @@ class DashboardScreen extends ConsumerWidget {
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF252540),
+                                  color: const Color(0xFF1E2029),
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                                 child: const Icon(
                                   Icons.notifications_outlined,
-                                  color: Color(0xFF9E9EBF),
+                                  color: Color(0xFFA6ADBD),
                                   size: 22,
                                 ),
                               ),
@@ -118,29 +126,30 @@ class DashboardScreen extends ConsumerWidget {
                           Text(
                             _getGreeting(),
                             style: theme.textTheme.bodyLarge?.copyWith(
-                              color: const Color(0xFF9E9EBF),
+                              color: const Color(0xFFA6ADBD),
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Text(
-                                'Welcome to ',
-                                style: theme.textTheme.headlineLarge,
-                              ),
-                              ShaderMask(
-                                shaderCallback: (bounds) => const LinearGradient(
-                                  colors: [Color(0xFF6C63FF), Color(0xFF00D9FF)],
-                                ).createShader(bounds),
-                                child: Text(
-                                  'Velion',
-                                  style: theme.textTheme.headlineLarge?.copyWith(
-                                    color: Colors.white,
+                            Row(
+                              children: [
+                                Text(
+                                  'Welcome to ',
+                                  style: theme.textTheme.headlineLarge,
+                                ),
+                                ShaderMask(
+                                  shaderCallback: (bounds) => const LinearGradient(
+                                    colors: [Color(0xFF6878FF), Color(0xFFF4F6FB)],
+                                  ).createShader(bounds),
+                                  child: Text(
+                                    'VELION',
+                                    style: theme.textTheme.headlineLarge?.copyWith(
+                                      color: Colors.white,
+                                      letterSpacing: 0.18,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            ),
                           const SizedBox(height: 32),
                         ],
                       ),
@@ -157,33 +166,21 @@ class DashboardScreen extends ConsumerWidget {
                             icon: Icons.article_outlined,
                             label: 'Total',
                             valueAsync: articleCountAsync,
-                            gradient: const [Color(0xFF6C63FF), Color(0xFF8B7FFF)],
+                            gradient: const [Color(0xFF6878FF), Color(0xFF8B7FFF)],
                           ),
                           const SizedBox(width: 12),
                           _StatCard(
-                            icon: Icons.mark_email_unread_outlined,
-                            label: 'Unread',
-                            valueAsync: unreadCountAsync,
+                            icon: Icons.computer_outlined,
+                            label: 'Tech',
+                            valueAsync: techCountAsync,
                             gradient: const [Color(0xFF3B82F6), Color(0xFF60A5FA)],
                           ),
                           const SizedBox(width: 12),
                           _StatCard(
-                            icon: Icons.today_outlined,
-                            label: 'Today',
-                            valueAsync: articlesAsync.when(
-                              data: (articles) {
-                                final today = DateTime.now();
-                                final count = articles.where((a) =>
-                                  a.addedAt.year == today.year &&
-                                  a.addedAt.month == today.month &&
-                                  a.addedAt.day == today.day
-                                ).length;
-                                return AsyncValue.data(count);
-                              },
-                              loading: () => const AsyncValue.loading(),
-                              error: (e, _) => const AsyncValue.data(0),
-                            ),
-                            gradient: const [Color(0xFF00D9FF), Color(0xFF38BDF8)],
+                            icon: Icons.public_outlined,
+                            label: 'General',
+                            valueAsync: generalCountAsync,
+                            gradient: const [Color(0xFF4ECDC4), Color(0xFF44B09E)],
                           ),
                         ],
                       ),
@@ -212,14 +209,14 @@ class DashboardScreen extends ConsumerWidget {
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                              colors: [Color(0xFF6C63FF), Color(0xFF3B82F6)],
+                              colors: [Color(0xFF6878FF), Color(0xFF3B82F6)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF6C63FF).withOpacity(0.3),
+                                color: const Color(0xFF6878FF).withOpacity(0.3),
                                 blurRadius: 20,
                                 offset: const Offset(0, 8),
                               ),
@@ -312,20 +309,20 @@ class DashboardScreen extends ConsumerWidget {
                                 Icon(
                                   Icons.article_outlined,
                                   size: 64,
-                                  color: const Color(0xFF3D3D5C),
+                                  color: const Color(0xFF2A2C38),
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
                                   'No articles yet',
                                   style: theme.textTheme.titleMedium?.copyWith(
-                                    color: const Color(0xFF5A5A7A),
+                                    color: const Color(0xFF5A5A6A),
                                   ),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
                                   'Save your first article to get started',
                                   style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: const Color(0xFF3D3D5C),
+                                    color: const Color(0xFF2A2C38),
                                   ),
                                 ),
                               ],
@@ -360,7 +357,7 @@ class DashboardScreen extends ConsumerWidget {
                       child: Padding(
                         padding: EdgeInsets.all(40),
                         child: Center(
-                          child: CircularProgressIndicator(color: Color(0xFF6C63FF)),
+                          child: CircularProgressIndicator(color: Color(0xFF6878FF)),
                         ),
                       ),
                     ),
@@ -397,9 +394,9 @@ class _StatCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A2E),
+          color: const Color(0xFF16181F),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFF252540), width: 1),
+          border: Border.all(color: const Color(0xFF1E2029), width: 1),
         ),
         child: Column(
           children: [
@@ -424,7 +421,7 @@ class _StatCard extends StatelessWidget {
               loading: () => const SizedBox(
                 width: 16,
                 height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6C63FF)),
+                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6878FF)),
               ),
               error: (_, __) => const Text('-', style: TextStyle(color: Colors.white, fontSize: 22)),
             ),
@@ -432,7 +429,7 @@ class _StatCard extends StatelessWidget {
             Text(
               label,
               style: const TextStyle(
-                color: Color(0xFF7A7A9A),
+                color: Color(0xFFA6ADBD),
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
               ),
@@ -458,9 +455,9 @@ class _RecentArticleTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A2E),
+          color: const Color(0xFF16181F),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF252540), width: 0.5),
+          border: Border.all(color: const Color(0xFF1E2029), width: 0.5),
         ),
         child: Row(
           children: [
@@ -496,7 +493,7 @@ class _RecentArticleTile extends StatelessWidget {
                   Text(
                     article.hostName,
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: const Color(0xFF6C63FF),
+                      color: const Color(0xFF6878FF),
                     ),
                   ),
                 ],
@@ -508,11 +505,11 @@ class _RecentArticleTile extends StatelessWidget {
                 height: 8,
                 margin: const EdgeInsets.only(left: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6C63FF),
+                  color: const Color(0xFF6878FF),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF6C63FF).withOpacity(0.5),
+                      color: const Color(0xFF6878FF).withOpacity(0.5),
                       blurRadius: 6,
                     ),
                   ],
@@ -530,11 +527,11 @@ class _RecentArticleTile extends StatelessWidget {
       height: 56,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF252540), Color(0xFF1A1A2E)],
+          colors: [Color(0xFF1E2029), Color(0xFF16181F)],
         ),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: const Icon(Icons.article_outlined, color: Color(0xFF3D3D5C), size: 24),
+      child: const Icon(Icons.article_outlined, color: Color(0xFF2A2C38), size: 24),
     );
   }
 }

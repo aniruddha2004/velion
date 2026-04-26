@@ -64,7 +64,7 @@ class DiscoverScreen extends StatelessWidget {
                     Text(
                       'More features coming soon to Velion',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF7A7A9A),
+                        color: const Color(0xFFA6ADBD),
                       ),
                     ),
                     const SizedBox(height: 28),
@@ -87,9 +87,9 @@ class DiscoverScreen extends StatelessWidget {
                     final feature = features[index];
                     return Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1A1A2E),
+                        color: const Color(0xFF16181F),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFF252540), width: 0.5),
+                        border: Border.all(color: const Color(0xFF1E2029), width: 0.5),
                       ),
                       child: Stack(
                         children: [
@@ -120,7 +120,7 @@ class DiscoverScreen extends StatelessWidget {
                                   end: Alignment.bottomCenter,
                                   colors: [
                                     Colors.transparent,
-                                    const Color(0xFF0F0F1A).withOpacity(0.4),
+                                    const Color(0xFF0B0D12).withOpacity(0.4),
                                   ],
                                 ),
                               ),
@@ -158,7 +158,7 @@ class DiscoverScreen extends StatelessWidget {
                                 Text(
                                   feature.description,
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: const Color(0xFF7A7A9A),
+                                    color: const Color(0xFFA6ADBD),
                                     height: 1.3,
                                   ),
                                 ),
