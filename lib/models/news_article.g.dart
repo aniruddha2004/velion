@@ -26,13 +26,15 @@ class NewsArticleAdapter extends TypeAdapter<NewsArticle> {
       siteName: fields[6] as String?,
       addedAt: fields[7] as DateTime,
       isRead: fields[8] as bool,
+      category: (fields[9] as String?) ?? 'general',
+      isArchived: (fields[10] as bool?) ?? false,
     );
   }
 
   @override
   void write(BinaryWriter writer, NewsArticle obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -50,7 +52,11 @@ class NewsArticleAdapter extends TypeAdapter<NewsArticle> {
       ..writeByte(7)
       ..write(obj.addedAt)
       ..writeByte(8)
-      ..write(obj.isRead);
+      ..write(obj.isRead)
+      ..writeByte(9)
+      ..write(obj.category)
+      ..writeByte(10)
+      ..write(obj.isArchived);
   }
 
   @override
