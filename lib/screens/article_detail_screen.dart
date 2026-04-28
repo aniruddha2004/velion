@@ -7,22 +7,58 @@ import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/news_article.dart';
 import '../providers/news_provider.dart';
+import '../providers/ai_provider.dart';
+import '../providers/settings_provider.dart';
+import 'chat_screen.dart';
 
-class ArticleDetailScreen extends ConsumerWidget {
+class ArticleDetailScreen extends ConsumerStatefulWidget {
   final NewsArticle article;
 
   const ArticleDetailScreen({super.key, required this.article});
 
+  @override
+  ConsumerState<ArticleDetailScreen> createState() => _ArticleDetailScreenState();
+}
+
+class _ArticleDetailScreenState extends ConsumerState<ArticleDetailScreen> {
+  String? _aiSummary;
+  bool _isLoadingSummary = false;
+  bool _summaryLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSummary();
+  }
+
+  Future<void> _loadSummary() async {
+    final isConfigured = await ref.read(settingsServiceProvider).isAIConfigured();
+    if (!isConfigured) return;
+
+    setState(() => _isLoadingSummary = true);
+    final geminiService = ref.read(geminiServiceProvider);
+    final summary = await geminiService.summarizeArticle(
+      title: widget.article.displayTitle,
+      description: widget.article.description,
+      url: widget.article.url,
+    );
+    if (mounted) {
+      setState(() {
+        _aiSummary = summary;
+        _isLoadingSummary = false;
+        _summaryLoaded = true;
+      });
+    }
+  }
+
   Future<void> _openOriginalArticle(BuildContext context) async {
-    final uri = Uri.parse(article.url);
+    final uri = Uri.parse(widget.article.url);
     try {
       final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!launched) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Could not open link'), behavior: SnackBarBehavior.floating),
-          );
-        }
+      if (!launched && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open link'), behavior: SnackBarBehavior.floating),
+        );
       }
     } catch (e) {
       if (context.mounted) {
@@ -35,13 +71,13 @@ class ArticleDetailScreen extends ConsumerWidget {
 
   void _shareLink(BuildContext context) {
     Share.share(
-      '${article.displayTitle}\n${article.url}',
-      subject: article.displayTitle,
+      '${widget.article.displayTitle}\n${widget.article.url}',
+      subject: widget.article.displayTitle,
     );
   }
 
   void _copyLink(BuildContext context) {
-    Clipboard.setData(ClipboardData(text: article.url));
+    Clipboard.setData(ClipboardData(text: widget.article.url));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Link copied to clipboard'), behavior: SnackBarBehavior.floating),
     );
@@ -51,7 +87,7 @@ class ArticleDetailScreen extends ConsumerWidget {
     return DateFormat('MMMM d, yyyy • h:mm a').format(date);
   }
 
-  void _showCategoryPicker(BuildContext context, WidgetRef ref) {
+  void _showCategoryPicker() {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -65,11 +101,11 @@ class ArticleDetailScreen extends ConsumerWidget {
               label: 'Tech',
               icon: Icons.computer_outlined,
               gradient: const [Color(0xFF6878FF), Color(0xFF3B82F6)],
-              isSelected: article.category == 'tech',
+              isSelected: widget.article.category == 'tech',
               onTap: () async {
                 Navigator.pop(ctx);
-                await ref.read(newsRepositoryProvider).changeCategory(article.id, 'tech');
-                _invalidateAll(ref);
+                await ref.read(newsRepositoryProvider).changeCategory(widget.article.id, 'tech');
+                _invalidateAll();
               },
             ),
             const SizedBox(height: 10),
@@ -77,11 +113,11 @@ class ArticleDetailScreen extends ConsumerWidget {
               label: 'General',
               icon: Icons.public_outlined,
               gradient: const [Color(0xFF4ECDC4), Color(0xFF44B09E)],
-              isSelected: article.category == 'general',
+              isSelected: widget.article.category == 'general',
               onTap: () async {
                 Navigator.pop(ctx);
-                await ref.read(newsRepositoryProvider).changeCategory(article.id, 'general');
-                _invalidateAll(ref);
+                await ref.read(newsRepositoryProvider).changeCategory(widget.article.id, 'general');
+                _invalidateAll();
               },
             ),
           ],
@@ -90,7 +126,7 @@ class ArticleDetailScreen extends ConsumerWidget {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, WidgetRef ref) {
+  void _showDeleteConfirmation() {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -104,8 +140,8 @@ class ArticleDetailScreen extends ConsumerWidget {
             onPressed: () async {
               Navigator.pop(ctx);
               Navigator.pop(context);
-              await ref.read(newsRepositoryProvider).deleteArticle(article.id);
-              _invalidateAll(ref);
+              await ref.read(newsRepositoryProvider).deleteArticle(widget.article.id);
+              _invalidateAll();
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Article deleted')));
             },
             style: FilledButton.styleFrom(backgroundColor: const Color(0xFFFF5252)),
@@ -116,7 +152,7 @@ class ArticleDetailScreen extends ConsumerWidget {
     );
   }
 
-  void _invalidateAll(WidgetRef ref) {
+  void _invalidateAll() {
     ref.invalidate(articlesProvider);
     ref.invalidate(archivedArticlesProvider);
     ref.invalidate(techArticlesProvider);
@@ -130,16 +166,16 @@ class ArticleDetailScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isTech = article.category == 'tech';
+    final isTech = widget.article.category == 'tech';
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0D12),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: article.imageUrl != null ? 300 : 0,
+            expandedHeight: widget.article.imageUrl != null ? 300 : 0,
             floating: false,
             pinned: true,
             backgroundColor: const Color(0xFF0B0D12),
@@ -167,13 +203,13 @@ class ArticleDetailScreen extends ConsumerWidget {
                 ),
               ),
             ],
-            flexibleSpace: article.imageUrl != null
+            flexibleSpace: widget.article.imageUrl != null
                 ? FlexibleSpaceBar(
                     background: Container(
                       color: const Color(0xFF16181F),
                       child: Center(
                         child: CachedNetworkImage(
-                          imageUrl: article.imageUrl!, fit: BoxFit.fitWidth,
+                          imageUrl: widget.article.imageUrl!, fit: BoxFit.fitWidth,
                           placeholder: (_, __) => Container(
                             decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF1E2029), Color(0xFF16181F)])),
                           ),
@@ -194,7 +230,6 @@ class ArticleDetailScreen extends ConsumerWidget {
                 // Category + Source
                 Row(
                   children: [
-                    // Category badge
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
@@ -213,11 +248,11 @@ class ArticleDetailScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    if (article.faviconUrl != null)
+                    if (widget.article.faviconUrl != null)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(6),
                         child: CachedNetworkImage(
-                          imageUrl: article.faviconUrl!, width: 22, height: 22,
+                          imageUrl: widget.article.faviconUrl!, width: 22, height: 22,
                           errorWidget: (_, __, ___) => _sourceIconLarge(),
                         ),
                       )
@@ -226,18 +261,96 @@ class ArticleDetailScreen extends ConsumerWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        article.hostName,
+                        widget.article.hostName,
                         style: theme.textTheme.titleSmall?.copyWith(color: const Color(0xFF6878FF), fontWeight: FontWeight.w700),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 20),
-                Text(article.displayTitle, style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800, height: 1.25, letterSpacing: -0.3)),
-                if (article.description?.isNotEmpty ?? false) ...[
+                Text(widget.article.displayTitle, style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800, height: 1.25, letterSpacing: -0.3)),
+                if (widget.article.description?.isNotEmpty ?? false) ...[
                   const SizedBox(height: 20),
-                  Text(article.description!, style: theme.textTheme.bodyLarge?.copyWith(color: const Color(0xFFB0B0D0), height: 1.6)),
+                  Text(widget.article.description!, style: theme.textTheme.bodyLarge?.copyWith(color: const Color(0xFFB0B0D0), height: 1.6)),
                 ],
+
+                // AI Summary section
+                if (_isLoadingSummary) ...[
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF16181F),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFF1E2029), width: 0.5),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(colors: [Color(0xFF6878FF), Color(0xFF3B82F6)]),
+                            borderRadius: BorderRadius.all(Radius.circular(8)),
+                          ),
+                          child: const Icon(Icons.auto_awesome, color: Colors.white, size: 16),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text('Generating AI summary...', style: TextStyle(color: Color(0xFFA6ADBD), fontSize: 13)),
+                        const SizedBox(width: 12),
+                        const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6878FF))),
+                      ],
+                    ),
+                  ),
+                ] else if (_aiSummary != null) ...[
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF16181F),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFF6878FF).withOpacity(0.2), width: 0.5),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(colors: [Color(0xFF6878FF), Color(0xFF3B82F6)]),
+                                borderRadius: BorderRadius.all(Radius.circular(8)),
+                              ),
+                              child: const Icon(Icons.auto_awesome, color: Colors.white, size: 16),
+                            ),
+                            const SizedBox(width: 12),
+                            Text('AI Summary', style: theme.textTheme.titleSmall?.copyWith(color: const Color(0xFF6878FF), fontWeight: FontWeight.w700)),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Text(_aiSummary!, style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFFE0E0F0), height: 1.6)),
+                      ],
+                    ),
+                  ),
+                ] else if (_summaryLoaded && _aiSummary == null) ...[
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF16181F),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFF1E2029), width: 0.5),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: const Color(0xFF5A5A6A), size: 18),
+                        const SizedBox(width: 12),
+                        Expanded(child: Text('Could not generate summary. Check your API key in Settings.', style: TextStyle(color: const Color(0xFF5A5A6A), fontSize: 13))),
+                      ],
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: 24),
 
                 // Action buttons
@@ -245,10 +358,24 @@ class ArticleDetailScreen extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: _actionCard(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        label: 'Chat',
+                        gradient: const [Color(0xFF6878FF), Color(0xFF3B82F6)],
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => ChatScreen(article: widget.article)),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _actionCard(
                         icon: Icons.swap_horiz_rounded,
                         label: 'Category',
-                        gradient: const [Color(0xFF6878FF), Color(0xFF3B82F6)],
-                        onTap: () => _showCategoryPicker(context, ref),
+                        gradient: const [Color(0xFF8B7FFF), Color(0xFF6C63FF)],
+                        onTap: () => _showCategoryPicker(),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -258,8 +385,8 @@ class ArticleDetailScreen extends ConsumerWidget {
                         label: 'Archive',
                         gradient: const [Color(0xFF4ECDC4), Color(0xFF44B09E)],
                         onTap: () async {
-                          await ref.read(newsRepositoryProvider).archiveArticle(article.id);
-                          _invalidateAll(ref);
+                          await ref.read(newsRepositoryProvider).archiveArticle(widget.article.id);
+                          _invalidateAll();
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Article archived')));
                         },
@@ -271,7 +398,7 @@ class ArticleDetailScreen extends ConsumerWidget {
                         icon: Icons.delete_outline_rounded,
                         label: 'Delete',
                         gradient: const [Color(0xFFFF5252), Color(0xFFFF7043)],
-                        onTap: () => _showDeleteConfirmation(context, ref),
+                        onTap: () => _showDeleteConfirmation(),
                       ),
                     ),
                   ],
@@ -303,7 +430,7 @@ class ArticleDetailScreen extends ConsumerWidget {
                         children: [
                           Text('Saved on', style: theme.textTheme.labelSmall?.copyWith(color: const Color(0xFFA6ADBD))),
                           const SizedBox(height: 2),
-                          Text(_formatDate(article.addedAt), style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                          Text(_formatDate(widget.article.addedAt), style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
                         ],
                       ),
                     ],

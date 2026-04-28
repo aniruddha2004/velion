@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dashboard_screen.dart';
 import 'home_screen.dart';
 import 'discover_screen.dart';
+import 'settings_screen.dart';
 import '../providers/news_provider.dart';
 
 class MainShell extends ConsumerStatefulWidget {
@@ -23,6 +24,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     DashboardScreen(),
     HomeScreen(),
     DiscoverScreen(),
+    SettingsScreen(),
   ];
 
   @override
@@ -136,6 +138,11 @@ class _MainShellState extends ConsumerState<MainShell> {
               icon: Icon(Icons.explore_outlined),
               activeIcon: Icon(Icons.explore),
               label: 'Discover',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.settings_outlined),
+              activeIcon: Icon(Icons.settings),
+              label: 'Settings',
             ),
           ],
         ),
