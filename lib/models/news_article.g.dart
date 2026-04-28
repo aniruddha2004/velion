@@ -26,8 +26,8 @@ class NewsArticleAdapter extends TypeAdapter<NewsArticle> {
       siteName: fields[6] as String?,
       addedAt: fields[7] as DateTime,
       isRead: fields[8] as bool,
-      category: (fields[9] as String?) ?? 'general',
-      isArchived: (fields[10] as bool?) ?? false,
+      category: fields[9] as String,
+      isArchived: fields[10] as bool,
     );
   }
 

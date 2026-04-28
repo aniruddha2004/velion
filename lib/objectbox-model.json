@@ -1,0 +1,88 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:3603863308539689785",
+      "lastPropertyId": "4:1301557118681969866",
+      "name": "ArticleEmbedding",
+      "properties": [
+        {
+          "id": "1:8950706584944597076",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:4797390148039915297",
+          "name": "articleId",
+          "type": 9
+        },
+        {
+          "id": "3:8936684604165681960",
+          "name": "content",
+          "type": 9
+        },
+        {
+          "id": "4:1301557118681969866",
+          "name": "embedding",
+          "type": 28,
+          "flags": 8,
+          "indexId": "1:1221671429398070697"
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "2:1304910396672708484",
+      "lastPropertyId": "6:6566647051098884281",
+      "name": "ChatMessageEntity",
+      "properties": [
+        {
+          "id": "1:7365560115810031178",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:7153067752905067312",
+          "name": "sessionId",
+          "type": 9
+        },
+        {
+          "id": "3:4693462021181268018",
+          "name": "articleId",
+          "type": 9
+        },
+        {
+          "id": "4:8042531193425024930",
+          "name": "role",
+          "type": 9
+        },
+        {
+          "id": "5:5647064765016901766",
+          "name": "content",
+          "type": 9
+        },
+        {
+          "id": "6:6566647051098884281",
+          "name": "createdAt",
+          "type": 6
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "2:1304910396672708484",
+  "lastIndexId": "1:1221671429398070697",
+  "lastRelationId": "0:0",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [],
+  "retiredPropertyUids": [],
+  "retiredRelationUids": [],
+  "version": 1
+}

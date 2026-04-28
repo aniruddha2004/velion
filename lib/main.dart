@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'models/news_article.dart';
 import 'screens/main_shell.dart';
+import 'services/objectbox_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +24,9 @@ void main() async {
   await Hive.initFlutter();
   Hive.registerAdapter(NewsArticleAdapter());
   await Hive.openBox<NewsArticle>('newsArticles');
+
+  // Initialize ObjectBox
+  await ObjectBoxService().store;
 
   runApp(const ProviderScope(child: VelionApp()));
 }
