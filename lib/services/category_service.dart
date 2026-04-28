@@ -18,6 +18,15 @@ class CategoryService {
     'database', 'sql', 'nosql', 'redis', 'postgres', 'mongodb',
     'frontend', 'backend', 'fullstack', 'full-stack', 'devtools',
     'product hunt', 'y combinator', 'yc',
+    // AI companies and products
+    'openai', 'codex', 'copilot', 'symphony', 'anthropic', 'deepmind',
+    'stability ai', 'midjourney', 'dall-e', 'sora',
+    // Dev tools and automation
+    'linear', 'jira', 'notion', 'figma', 'vercel', 'netlify',
+    'automation', 'automate', 'workflow', 'agent', 'agents',
+    // Security
+    'ransomware', 'malware', 'phishing', 'zero-day', 'cve',
+    'firewall', 'encryption', 'penetration test',
   ];
 
   static const _techSources = [
@@ -33,6 +42,12 @@ class CategoryService {
     'producthunt', 'product hunt', 'ycombinator', 'y combinator',
     'openai.com', 'deepmind', 'anthropic',
     'theinformation', 'stratechery', 'daringfireball',
+    // Security-focused tech publications
+    'helpnetsecurity', 'thehackernews', 'bleepingcomputer', 'darkreading',
+    'securityweek', 'threatpost', 'krebs on security', 'krebsonsecurity',
+    'sans.org', 'owasp',
+    // Dev/AI publications
+    'benevolence.ai', 'spectrum.ieee', 'ieee',
   ];
 
   /// Categorize an article based on its URL, title, description, and site name.
