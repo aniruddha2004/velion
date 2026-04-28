@@ -9,6 +9,7 @@ class LinkPreviewCard extends StatelessWidget {
   final VoidCallback? onArchive;
   final VoidCallback? onDelete;
   final VoidCallback? onChangeCategory;
+  final bool isArchived;
 
   const LinkPreviewCard({
     super.key,
@@ -17,6 +18,7 @@ class LinkPreviewCard extends StatelessWidget {
     this.onArchive,
     this.onDelete,
     this.onChangeCategory,
+    this.isArchived = false,
   });
 
   @override
@@ -170,7 +172,7 @@ class LinkPreviewCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       _actionButton(icon: Icons.swap_horiz_rounded, onTap: onChangeCategory),
                       const SizedBox(width: 6),
-                      _actionButton(icon: Icons.archive_outlined, onTap: onArchive),
+                      _actionButton(icon: isArchived ? Icons.unarchive_outlined : Icons.archive_outlined, onTap: onArchive),
                       const SizedBox(width: 6),
                       _actionButton(icon: Icons.delete_outline_rounded, onTap: onDelete, color: const Color(0xFFFF5252)),
                     ],

@@ -19,7 +19,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -222,10 +225,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                   unselectedLabelColor: const Color(0xFFA6ADBD),
                   labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, height: 1.0),
                   unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13, height: 1.0),
-                  tabs: const [
-                    Tab(child: Text('All')),
-                    Tab(child: Text('Tech')),
-                    Tab(child: Text('General')),
+                  tabs: [
+                    Tab(height: 44, child: Center(child: Text('All'))),
+                    Tab(height: 44, child: Center(child: Text('Tech'))),
+                    Tab(height: 44, child: Center(child: Text('General'))),
+                    Tab(height: 44, child: Center(child: Text('Archived'))),
                   ],
                 ),
               ),
@@ -241,13 +245,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                   _buildArticleList(articlesProvider),
                   _buildArticleList(techArticlesProvider),
                   _buildArticleList(generalArticlesProvider),
+                  _buildArticleList(archivedArticlesProvider, isArchivedTab: true),
                 ],
               ),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: _tabController.index != 3 ? FloatingActionButton(
         onPressed: () async {
           final result = await Navigator.push<bool>(
             context,
@@ -256,11 +261,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
           if (result == true) _invalidateAll();
         },
         child: const Icon(Icons.add_rounded, size: 28),
-      ),
+      ) : null,
     );
   }
 
-  Widget _buildArticleList(FutureProvider<List<NewsArticle>> provider) {
+  Widget _buildArticleList(FutureProvider<List<NewsArticle>> provider, {bool isArchivedTab = false}) {
     final theme = Theme.of(context);
     return Consumer(
       builder: (context, ref, _) {
@@ -279,12 +284,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                       padding: const EdgeInsets.symmetric(vertical: 80),
                       child: Column(
                         children: [
-                          Icon(Icons.article_outlined, size: 72, color: const Color(0xFF2A2C38)),
+                          Icon(
+                            isArchivedTab ? Icons.archive_outlined : Icons.article_outlined, 
+                            size: 72, 
+                            color: const Color(0xFF2A2C38)
+                          ),
                           const SizedBox(height: 20),
                           Text(
-                            'No articles yet',
+                            isArchivedTab ? 'No archived articles' : 'No articles yet',
                             style: theme.textTheme.titleMedium?.copyWith(color: const Color(0xFF5A5A6A)),
                           ),
+                          if (isArchivedTab) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Archive articles to see them here',
+                              style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF5A5A6A)),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -304,17 +320,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                         builder: (context) => ArticleDetailScreen(article: article),
                       ),
                     ),
-                    onArchive: () async {
-                      await ref.read(newsRepositoryProvider).archiveArticle(article.id);
-                      _invalidateAll();
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Article archived')),
-                        );
-                      }
-                    },
+                    onArchive: isArchivedTab
+                        ? () async {
+                            await ref.read(newsRepositoryProvider).unarchiveArticle(article.id);
+                            _invalidateAll();
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Article unarchived')),
+                              );
+                            }
+                          }
+                        : () async {
+                            await ref.read(newsRepositoryProvider).archiveArticle(article.id);
+                            _invalidateAll();
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Article archived')),
+                              );
+                            }
+                          },
                     onDelete: () => _showDeleteConfirmation(article),
                     onChangeCategory: () => _showCategoryPicker(article),
+                    isArchived: isArchivedTab,
                   );
                 },
               );
