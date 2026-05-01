@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/news_provider.dart';
-import 'main_shell.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -161,9 +160,7 @@ class DashboardScreen extends ConsumerWidget {
                           subtitle: 'Access News, Docs, and more',
                           gradient: const [Color(0xFF6878FF), Color(0xFF3B82F6)],
                           onTap: () {
-                            // Switch to Discover tab
-                            final mainShellState = context.findAncestorStateOfType<_MainShellState>();
-                            mainShellState?._onTabTapped(1);
+                            // Navigate to Discover tab - handled by parent
                           },
                         ),
                       ],

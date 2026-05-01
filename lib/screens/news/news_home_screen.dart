@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/news_article.dart';
-import '../providers/news_provider.dart';
-import '../widgets/link_preview_card.dart';
-import 'add_article_screen.dart';
-import 'article_detail_screen.dart';
+import '../../models/news_article.dart';
+import '../../providers/news_provider.dart';
+import '../../widgets/link_preview_card.dart';
+import '../add_article_screen.dart';
+import '../article_detail_screen.dart';
 
-class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key});
+class NewsHomeScreen extends ConsumerStatefulWidget {
+  const NewsHomeScreen({super.key});
 
   @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<NewsHomeScreen> createState() => _NewsHomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProviderStateMixin {
+class _NewsHomeScreenState extends ConsumerState<NewsHomeScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
