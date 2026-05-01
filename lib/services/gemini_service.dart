@@ -31,11 +31,15 @@ class GeminiService {
     required String title,
     String? description,
     String? url,
+    String? fullContent,
   }) async {
     final model = await _getModel(
-      systemInstruction: 'You are a concise news summarizer. Provide a brief, '
-          'informative summary of the given article in 2-3 sentences. '
-          'Focus on key facts and takeaways. Be neutral and factual.',
+      systemInstruction: 'You are Velion, a helpful news assistant. Provide a clear, informative summary of the article. '
+          'Structure it as:\n'
+          '• Brief headline capturing the main point\n'
+          '• 2-3 key bullet points\n'
+          '• One short paragraph (2-3 sentences) explaining significance\n'
+          'Keep it concise but informative. Around 100-150 words total.',
     );
     if (model == null) return null;
 
@@ -43,8 +47,12 @@ class GeminiService {
       final prompt = StringBuffer();
       prompt.writeln('Summarize this news article:');
       prompt.writeln('Title: $title');
-      if (description != null && description.isNotEmpty) {
-        prompt.writeln('Description: $description');
+      if (fullContent != null && fullContent.isNotEmpty) {
+        prompt.writeln('\nFull Article Content:\n$fullContent');
+      } else {
+        if (description != null && description.isNotEmpty) {
+          prompt.writeln('Description: $description');
+        }
       }
       if (url != null) {
         prompt.writeln('Source: $url');
@@ -63,16 +71,27 @@ class GeminiService {
     required String articleTitle,
     String? articleDescription,
     String? articleUrl,
+    String? fullContent,
   }) async {
     final sessionId = _uuid.v4();
+
+    // Build article context - prefer full content, fallback to description
+    final articleContext = StringBuffer();
+    articleContext.writeln('Article Title: $articleTitle');
+    if (fullContent != null && fullContent.isNotEmpty) {
+      articleContext.writeln('\nFull Article Content:\n$fullContent');
+    } else if (articleDescription != null && articleDescription.isNotEmpty) {
+      articleContext.writeln('Article Description: $articleDescription');
+    }
+    if (articleUrl != null) {
+      articleContext.writeln('Article URL: $articleUrl');
+    }
 
     final contextPrompt = 'You are an AI assistant that answers questions about a '
         'specific news article. Only answer based on the article content provided. '
         'If the user asks about something not related to the article, politely redirect '
         'them to ask about the article.\n\n'
-        'Article Title: $articleTitle\n'
-        '${articleDescription != null && articleDescription.isNotEmpty ? 'Article Description: $articleDescription\n' : ''}'
-        '${articleUrl != null ? 'Article URL: $articleUrl\n' : ''}'
+        '${articleContext.toString()}'
         '\nAnswer the user\'s questions with reference to this article.';
 
     final model = await _getModel(systemInstruction: contextPrompt);
@@ -83,7 +102,7 @@ class GeminiService {
     // Store article content in ObjectBox for this session
     final embedding = ArticleEmbedding(
       articleId: articleId,
-      content: '$articleTitle\n${articleDescription ?? ''}',
+      content: fullContent ?? '$articleTitle\n${articleDescription ?? ''}',
     );
     await _objectBox.saveArticleEmbedding(embedding);
 

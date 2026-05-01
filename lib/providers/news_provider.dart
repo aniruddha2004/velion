@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/news_article.dart';
 import '../services/news_repository.dart';
 import '../services/link_preview_service.dart';
+import '../services/category_service.dart';
 
 final newsRepositoryProvider = Provider((ref) => NewsRepository());
 
@@ -60,21 +61,27 @@ final archivedCountProvider = FutureProvider<int>((ref) async {
 class AddArticleState {
   final bool isLoading;
   final String? error;
+  final Set<String> loadingArticleIds; // Track which articles are being fetched
 
   const AddArticleState({
     this.isLoading = false,
     this.error,
+    this.loadingArticleIds = const {},
   });
 
   AddArticleState copyWith({
     bool? isLoading,
     String? error,
+    Set<String>? loadingArticleIds,
   }) {
     return AddArticleState(
       isLoading: isLoading ?? this.isLoading,
       error: error,
+      loadingArticleIds: loadingArticleIds ?? this.loadingArticleIds,
     );
   }
+
+  bool isArticleLoading(String articleId) => loadingArticleIds.contains(articleId);
 }
 
 class AddArticleNotifier extends StateNotifier<AddArticleState> {
@@ -111,21 +118,49 @@ class AddArticleNotifier extends StateNotifier<AddArticleState> {
         return null;
       }
 
-      final previewService = _ref.read(linkPreviewServiceProvider);
-      final preview = await previewService.fetchPreview(normalizedUrl);
-
-      final article = await repository.addArticle(
-        url: normalizedUrl,
-        title: preview.title,
-        description: preview.description,
-        imageUrl: preview.imageUrl,
-        faviconUrl: preview.faviconUrl,
-        siteName: preview.siteName,
+      // Add article immediately with just the URL so it appears in the list
+      var article = await repository.addArticle(url: normalizedUrl);
+      
+      // Track this article as loading
+      state = state.copyWith(
+        isLoading: true,
+        loadingArticleIds: {...state.loadingArticleIds, article.id},
       );
-
-      state = state.copyWith(isLoading: false);
+      
+      // Invalidate to show the article in the list immediately
       _invalidateAll();
 
+      // Fetch preview and full content in background
+      final previewService = _ref.read(linkPreviewServiceProvider);
+      final preview = await previewService.fetchPreview(normalizedUrl);
+      final fullContent = await previewService.fetchFullArticleContent(normalizedUrl);
+
+      // Update the article with fetched data and re-categorize
+      if (preview.title != null || preview.description != null || preview.imageUrl != null) {
+        // Re-categorize with the new metadata
+        final newCategory = CategoryService.categorize(
+          url: normalizedUrl,
+          title: preview.title,
+          description: preview.description,
+          siteName: preview.siteName,
+        );
+        
+        article = article.copyWith(
+          title: preview.title ?? article.title,
+          description: preview.description ?? article.description,
+          imageUrl: preview.imageUrl ?? article.imageUrl,
+          faviconUrl: preview.faviconUrl ?? article.faviconUrl,
+          siteName: preview.siteName ?? article.siteName,
+          fullContent: fullContent ?? article.fullContent,
+          category: newCategory,
+        );
+        await repository.updateArticle(article);
+        _invalidateAll();
+      }
+
+      // Remove from loading set
+      final newLoadingIds = Set<String>.from(state.loadingArticleIds)..remove(article.id);
+      state = state.copyWith(isLoading: false, loadingArticleIds: newLoadingIds);
       return article;
     } catch (e) {
       state = state.copyWith(isLoading: false, error: 'Failed to add article');

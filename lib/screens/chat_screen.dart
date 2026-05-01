@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_generative_ai/google_generative_ai.dart' as genai;
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../models/news_article.dart';
 import '../providers/ai_provider.dart';
+import '../providers/news_provider.dart';
 import '../providers/settings_provider.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
@@ -49,12 +51,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return;
     }
 
+    // Fetch full article content if not already stored
+    String? fullContent = widget.article.fullContent;
+    if (fullContent == null || fullContent.isEmpty) {
+      final previewService = ref.read(linkPreviewServiceProvider);
+      fullContent = await previewService.fetchFullArticleContent(widget.article.url);
+      if (fullContent != null) {
+        final article = widget.article;
+        final updated = article.copyWith(fullContent: fullContent);
+        await ref.read(newsRepositoryProvider).updateArticle(updated);
+      }
+    }
+
     final geminiService = ref.read(geminiServiceProvider);
     final result = await geminiService.startChatSession(
       articleId: widget.article.id,
       articleTitle: widget.article.displayTitle,
       articleDescription: widget.article.description,
       articleUrl: widget.article.url,
+      fullContent: fullContent,
     );
 
     if (!mounted) return;
@@ -356,12 +371,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   width: 0.5,
                 ),
               ),
-              child: Text(
-                message.content,
-                style: TextStyle(
-                  color: isUser ? Colors.white : const Color(0xFFE0E0F0),
-                  fontSize: 14,
-                  height: 1.5,
+              child: MarkdownBody(
+                data: message.content,
+                selectable: true,
+                styleSheet: MarkdownStyleSheet(
+                  p: TextStyle(
+                    color: isUser ? Colors.white : const Color(0xFFE0E0F0),
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                  h1: TextStyle(color: isUser ? Colors.white : const Color(0xFFE0E0F0), fontSize: 18, fontWeight: FontWeight.w700),
+                  h2: TextStyle(color: isUser ? Colors.white : const Color(0xFFE0E0F0), fontSize: 16, fontWeight: FontWeight.w700),
+                  h3: TextStyle(color: isUser ? Colors.white : const Color(0xFFE0E0F0), fontSize: 14, fontWeight: FontWeight.w700),
+                  listBullet: TextStyle(color: isUser ? Colors.white70 : const Color(0xFF6878FF), fontSize: 14),
+                  code: TextStyle(color: const Color(0xFF6878FF), backgroundColor: const Color(0xFF1E2029), fontSize: 12),
+                  codeblockDecoration: BoxDecoration(color: const Color(0xFF1E2029), borderRadius: BorderRadius.circular(8)),
+                  blockquote: TextStyle(color: isUser ? Colors.white70 : const Color(0xFFA6ADBD), fontSize: 14),
+                  blockquoteDecoration: BoxDecoration(color: const Color(0xFF1E2029), borderRadius: BorderRadius.circular(4)),
+                  strong: TextStyle(color: isUser ? Colors.white : const Color(0xFFE0E0F0), fontSize: 14, fontWeight: FontWeight.w700),
+                  em: TextStyle(color: isUser ? Colors.white : const Color(0xFFE0E0F0), fontSize: 14, fontStyle: FontStyle.italic),
                 ),
               ),
             ),

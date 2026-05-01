@@ -37,6 +37,12 @@ class NewsArticle extends HiveObject {
   @HiveField(10)
   bool isArchived;
 
+  @HiveField(11)
+  String? fullContent;
+
+  @HiveField(12)
+  String? aiSummary;
+
   NewsArticle({
     required this.id,
     required this.url,
@@ -49,6 +55,8 @@ class NewsArticle extends HiveObject {
     this.isRead = false,
     this.category = 'general',
     this.isArchived = false,
+    this.fullContent,
+    this.aiSummary,
   });
 
   NewsArticle copyWith({
@@ -63,6 +71,8 @@ class NewsArticle extends HiveObject {
     bool? isRead,
     String? category,
     bool? isArchived,
+    String? fullContent,
+    String? aiSummary,
   }) {
     return NewsArticle(
       id: id ?? this.id,
@@ -76,6 +86,8 @@ class NewsArticle extends HiveObject {
       isRead: isRead ?? this.isRead,
       category: category ?? this.category,
       isArchived: isArchived ?? this.isArchived,
+      fullContent: fullContent ?? this.fullContent,
+      aiSummary: aiSummary ?? this.aiSummary,
     );
   }
 

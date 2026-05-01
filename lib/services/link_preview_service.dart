@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' show parse;
 
@@ -25,12 +26,33 @@ class LinkPreviewService {
 
   Future<LinkPreviewData> fetchPreview(String url) async {
     try {
-      final uri = Uri.parse(url);
+      String normalizedUrl = url.trim();
+      if (!normalizedUrl.startsWith('http')) {
+        normalizedUrl = 'https://$normalizedUrl';
+      }
+
+      debugPrint('Fetching preview for: $normalizedUrl');
+      
+      final uri = Uri.parse(normalizedUrl);
+      
+      // Handle Google sharing URLs - they redirect to the actual article
+      if (uri.host.contains('share.google')) {
+        debugPrint('Detected Google share URL, attempting to resolve...');
+        final redirectUrl = await _resolveGoogleShareUrl(uri);
+        if (redirectUrl != null) {
+          debugPrint('Resolved to: $redirectUrl');
+          return fetchPreview(redirectUrl);
+        } else {
+          debugPrint('Failed to resolve Google share URL');
+        }
+      }
 
       // Use desktop User-Agent for Instagram to avoid login wall
       final isInstagram = uri.host.toLowerCase().contains('instagram.com') ||
           uri.host.toLowerCase().contains('instagr.am');
-      final userAgent = isInstagram
+      final isYouTube = uri.host.toLowerCase().contains('youtube.com') ||
+          uri.host.toLowerCase().contains('youtu.be');
+      final userAgent = (isInstagram || isYouTube)
           ? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
           : 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
 
@@ -50,6 +72,9 @@ class LinkPreviewService {
           'Cache-Control': 'max-age=0',
         },
       ).timeout(_timeout);
+
+      debugPrint('Response status: ${response.statusCode}');
+      debugPrint('Final URL after redirects: ${response.request?.url}');
 
       if (response.statusCode != 200) {
         return LinkPreviewData.empty();
@@ -97,6 +122,29 @@ class LinkPreviewService {
           if (segments.isNotEmpty) {
             title = '@${segments.first}';
             description = 'Instagram profile';
+          }
+        }
+      }
+
+      // YouTube fallback: extract video title and description from page
+      if (isYouTube && (title == null || title == 'YouTube')) {
+        final pageTitle = document.querySelector('title')?.text;
+        if (pageTitle != null && pageTitle != 'YouTube') {
+          // Remove " - YouTube" suffix if present
+          title = pageTitle.replaceAll(RegExp(r'\s*-\s*YouTube\s*$'), '').trim();
+        }
+        
+        // Try to extract description from meta tags more aggressively
+        if (description == null || description.isEmpty) {
+          // Look for video description in various places
+          final metaDesc = head.querySelector('meta[name="description"]')?.attributes['content'];
+          if (metaDesc != null && metaDesc.isNotEmpty && metaDesc != 'Enjoy the videos and music you love, upload original content, and share it all with friends, family, and the world on YouTube.') {
+            description = metaDesc;
+          }
+          
+          // Try JSON-LD for VideoObject
+          if (jsonLdData['@type'] == 'VideoObject') {
+            description ??= jsonLdData['description'];
           }
         }
       }
@@ -240,5 +288,207 @@ class LinkPreviewService {
     if (desc == null) return null;
     if (desc.length <= 200) return desc;
     return '${desc.substring(0, 197)}...';
+  }
+
+  /// Fetch the full article text content from a URL.
+  /// Extracts article body text by looking for common article containers.
+  Future<String?> fetchFullArticleContent(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      final isInstagram = uri.host.toLowerCase().contains('instagram.com') ||
+          uri.host.toLowerCase().contains('instagr.am');
+      final userAgent = isInstagram
+          ? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          : 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'User-Agent': userAgent,
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+      ).timeout(_timeout);
+
+      if (response.statusCode != 200) return null;
+
+      final document = parse(response.body);
+
+      // Try to get full article text from JSON-LD articleBody first
+      final jsonLdData = _extractJsonLd(document);
+      final articleBody = jsonLdData['articleBody'];
+      if (articleBody is String && articleBody.length > 200) {
+        return articleBody.trim();
+      }
+
+      // Try common article content selectors
+      final selectors = [
+        'article',
+        '[role="article"]',
+        '.article-body',
+        '.article-content',
+        '.article-text',
+        '.post-body',
+        '.post-content',
+        '.entry-content',
+        '.story-body',
+        '.story-content',
+        '.content-body',
+        '.article__body',
+        '.article__content',
+        '#article-body',
+        '#article-content',
+        '.main-content',
+        '.post-article',
+      ];
+
+      for (final selector in selectors) {
+        final element = document.querySelector(selector);
+        if (element != null) {
+          final text = _extractTextFromElement(element);
+          if (text.length > 200) return text;
+        }
+      }
+
+      // Fallback: get all paragraph text from the body
+      final body = document.body;
+      if (body != null) {
+        final text = _extractTextFromElement(body);
+        if (text.length > 100) return text;
+      }
+
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Extract clean text from an HTML element, removing scripts, styles, nav, etc.
+  String _extractTextFromElement(dynamic element) {
+    // Remove unwanted elements
+    final removeSelectors = [
+      'script', 'style', 'nav', 'header', 'footer',
+      '.sidebar', '.ad', '.advertisement', '.social-share',
+      '.share-buttons', '.comments', '.related', '.newsletter',
+      'noscript', 'iframe',
+    ];
+
+    final clone = element.clone(true);
+    for (final selector in removeSelectors) {
+      clone.querySelectorAll(selector).forEach((el) => el.remove());
+    }
+
+    // Get text from paragraphs, headings, lists, blockquotes
+    final contentElements = clone.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote, pre');
+    final buffer = StringBuffer();
+    for (final el in contentElements) {
+      final text = el.text.trim();
+      if (text.isNotEmpty) {
+        buffer.writeln(text);
+        buffer.writeln();
+      }
+    }
+
+    var result = buffer.toString().trim();
+    // Clean up excessive whitespace
+    result = result.replaceAll(RegExp(r'\n{3,}'), '\n\n');
+    // Truncate to ~15000 chars to stay within token limits
+    if (result.length > 15000) {
+      result = '${result.substring(0, 14997)}...';
+    }
+    return result;
+  }
+
+  /// Resolve Google share.google URLs to the actual destination
+  Future<String?> _resolveGoogleShareUrl(Uri uri) async {
+    try {
+      // Follow redirects manually to get the final URL
+      var currentUri = uri;
+      var redirectCount = 0;
+      const maxRedirects = 5;
+      
+      while (redirectCount < maxRedirects) {
+        final request = http.Request('GET', currentUri)
+          ..followRedirects = false
+          ..headers['User-Agent'] = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36';
+        
+        final streamedResponse = await request.send().timeout(Duration(seconds: 10));
+        final response = await http.Response.fromStream(streamedResponse);
+        
+        // Check for redirect
+        if (response.statusCode >= 300 && response.statusCode < 400) {
+          final location = response.headers['location'];
+          if (location != null) {
+            currentUri = Uri.parse(location);
+            redirectCount++;
+            continue;
+          }
+        }
+        
+        // Parse the final response
+        if (response.statusCode == 200) {
+          // If we reached a non-share.google URL, return it
+          if (!currentUri.host.contains('share.google')) {
+            return currentUri.toString();
+          }
+          
+          // Still on share.google, parse the HTML
+          final document = parse(response.body);
+          
+          // Look for meta refresh
+          final metaRefresh = document.querySelector('meta[http-equiv="refresh"]');
+          if (metaRefresh != null) {
+            final content = metaRefresh.attributes['content'];
+            if (content != null) {
+              final match = RegExp(r'URL=\s*(.+)', caseSensitive: false).firstMatch(content);
+              if (match != null) {
+                return match.group(1)?.trim();
+              }
+            }
+          }
+          
+          // Look for canonical link
+          final canonical = document.querySelector('link[rel="canonical"]');
+          if (canonical != null) {
+            final href = canonical.attributes['href'];
+            if (href != null && !href.contains('share.google')) {
+              return href;
+            }
+          }
+          
+          // Look for og:url
+          final ogUrl = document.querySelector('meta[property="og:url"]');
+          if (ogUrl != null) {
+            final content = ogUrl.attributes['content'];
+            if (content != null && !content.contains('share.google')) {
+              return content;
+            }
+          }
+          
+          // Look for JavaScript redirect
+          final scripts = document.querySelectorAll('script');
+          for (final script in scripts) {
+            final text = script.text;
+            // Match location.href assignments
+            final hrefMatch = RegExp(r'location\.href\s*=\s*["\x27]([^"\x27]+)["\x27]').firstMatch(text);
+            if (hrefMatch != null) {
+              final url = hrefMatch.group(1);
+              if (url != null && !url.contains('share.google')) {
+                return url;
+              }
+            }
+          }
+          
+          return null;
+        }
+        
+        return null;
+      }
+      
+      return null;
+    } catch (e) {
+      debugPrint('Failed to resolve Google share URL: $e');
+      return null;
+    }
   }
 }

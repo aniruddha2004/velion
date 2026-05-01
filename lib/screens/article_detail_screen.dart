@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../models/news_article.dart';
 import '../providers/news_provider.dart';
 import '../providers/ai_provider.dart';
@@ -32,22 +33,54 @@ class _ArticleDetailScreenState extends ConsumerState<ArticleDetailScreen> {
   }
 
   Future<void> _loadSummary() async {
+    // Check if summary already exists
+    if (widget.article.aiSummary != null && widget.article.aiSummary!.isNotEmpty) {
+      setState(() {
+        _aiSummary = widget.article.aiSummary;
+        _isLoadingSummary = false;
+        _summaryLoaded = true;
+      });
+      return;
+    }
+
     final isConfigured = await ref.read(settingsServiceProvider).isAIConfigured();
     if (!isConfigured) return;
 
     setState(() => _isLoadingSummary = true);
     final geminiService = ref.read(geminiServiceProvider);
+
+    // Fetch full article content if not already stored
+    String? fullContent = widget.article.fullContent;
+    if (fullContent == null || fullContent.isEmpty) {
+      final previewService = ref.read(linkPreviewServiceProvider);
+      fullContent = await previewService.fetchFullArticleContent(widget.article.url);
+      if (fullContent != null) {
+        final article = widget.article;
+        final updated = article.copyWith(fullContent: fullContent);
+        await ref.read(newsRepositoryProvider).updateArticle(updated);
+      }
+    }
+
     final summary = await geminiService.summarizeArticle(
       title: widget.article.displayTitle,
       description: widget.article.description,
       url: widget.article.url,
+      fullContent: fullContent,
     );
+    
     if (mounted) {
       setState(() {
         _aiSummary = summary;
         _isLoadingSummary = false;
         _summaryLoaded = true;
       });
+      
+      // Save summary to article
+      if (summary != null && summary.isNotEmpty) {
+        final article = widget.article;
+        final updated = article.copyWith(aiSummary: summary);
+        await ref.read(newsRepositoryProvider).updateArticle(updated);
+      }
     }
   }
 
@@ -175,7 +208,8 @@ class _ArticleDetailScreenState extends ConsumerState<ArticleDetailScreen> {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: widget.article.imageUrl != null ? 300 : 0,
+            expandedHeight: widget.article.imageUrl != null ? 200 : kToolbarHeight,
+            collapsedHeight: kToolbarHeight,
             floating: false,
             pinned: true,
             backgroundColor: const Color(0xFF0B0D12),
@@ -205,26 +239,30 @@ class _ArticleDetailScreenState extends ConsumerState<ArticleDetailScreen> {
             ],
             flexibleSpace: widget.article.imageUrl != null
                 ? FlexibleSpaceBar(
-                    background: Container(
-                      color: const Color(0xFF16181F),
-                      child: Center(
-                        child: CachedNetworkImage(
-                          imageUrl: widget.article.imageUrl!, fit: BoxFit.fitWidth,
-                          placeholder: (_, __) => Container(
-                            decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF1E2029), Color(0xFF16181F)])),
-                          ),
-                          errorWidget: (_, __, ___) => Container(
-                            decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF1E2029), Color(0xFF16181F)])),
-                            child: const Icon(Icons.image_not_supported, color: Color(0xFF2A2C38)),
+                    background: CachedNetworkImage(
+                      imageUrl: widget.article.imageUrl!,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xFF1E2029), Color(0xFF16181F)],
                           ),
                         ),
+                      ),
+                      errorWidget: (_, __, ___) => Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xFF1E2029), Color(0xFF16181F)],
+                          ),
+                        ),
+                        child: const Icon(Icons.image_not_supported, color: Color(0xFF2A2C38)),
                       ),
                     ),
                   )
                 : null,
           ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 // Category + Source
@@ -274,7 +312,7 @@ class _ArticleDetailScreenState extends ConsumerState<ArticleDetailScreen> {
                   Text(widget.article.description!, style: theme.textTheme.bodyLarge?.copyWith(color: const Color(0xFFB0B0D0), height: 1.6)),
                 ],
 
-                // AI Summary section
+                // Velion's Summary section
                 if (_isLoadingSummary) ...[
                   const SizedBox(height: 24),
                   Container(
@@ -295,7 +333,7 @@ class _ArticleDetailScreenState extends ConsumerState<ArticleDetailScreen> {
                           child: const Icon(Icons.auto_awesome, color: Colors.white, size: 16),
                         ),
                         const SizedBox(width: 12),
-                        const Text('Generating AI summary...', style: TextStyle(color: Color(0xFFA6ADBD), fontSize: 13)),
+                        const Text('Generating Velion\'s summary...', style: TextStyle(color: Color(0xFFA6ADBD), fontSize: 13)),
                         const SizedBox(width: 12),
                         const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6878FF))),
                       ],
@@ -324,11 +362,27 @@ class _ArticleDetailScreenState extends ConsumerState<ArticleDetailScreen> {
                               child: const Icon(Icons.auto_awesome, color: Colors.white, size: 16),
                             ),
                             const SizedBox(width: 12),
-                            Text('AI Summary', style: theme.textTheme.titleSmall?.copyWith(color: const Color(0xFF6878FF), fontWeight: FontWeight.w700)),
+                            Text('Velion\'s Summary', style: theme.textTheme.titleSmall?.copyWith(color: const Color(0xFF6878FF), fontWeight: FontWeight.w700)),
                           ],
                         ),
                         const SizedBox(height: 14),
-                        Text(_aiSummary!, style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFFE0E0F0), height: 1.6)),
+                        MarkdownBody(
+                          data: _aiSummary!,
+                          selectable: true,
+                          styleSheet: MarkdownStyleSheet(
+                            p: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFFE0E0F0), height: 1.6),
+                            h1: theme.textTheme.titleLarge?.copyWith(color: const Color(0xFFE0E0F0), fontWeight: FontWeight.w700),
+                            h2: theme.textTheme.titleMedium?.copyWith(color: const Color(0xFFE0E0F0), fontWeight: FontWeight.w700),
+                            h3: theme.textTheme.titleSmall?.copyWith(color: const Color(0xFFE0E0F0), fontWeight: FontWeight.w700),
+                            listBullet: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF6878FF)),
+                            code: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF6878FF), backgroundColor: const Color(0xFF1E2029)),
+                            codeblockDecoration: BoxDecoration(color: const Color(0xFF1E2029), borderRadius: BorderRadius.circular(8)),
+                            blockquote: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFFA6ADBD)),
+                            blockquoteDecoration: BoxDecoration(color: const Color(0xFF1E2029), borderRadius: BorderRadius.circular(4)),
+                            strong: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFFE0E0F0), fontWeight: FontWeight.w700),
+                            em: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFFE0E0F0), fontStyle: FontStyle.italic),
+                          ),
+                        ),
                       ],
                     ),
                   ),

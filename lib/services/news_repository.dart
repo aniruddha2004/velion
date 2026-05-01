@@ -56,6 +56,7 @@ class NewsRepository {
     String? faviconUrl,
     String? siteName,
     String? category,
+    String? fullContent,
   }) async {
     final box = await _newsBox;
 
@@ -77,6 +78,7 @@ class NewsRepository {
       siteName: siteName,
       addedAt: DateTime.now(),
       category: autoCategory,
+      fullContent: fullContent,
     );
 
     await box.put(article.id, article);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
+import 'package:shimmer/shimmer.dart';
 import '../models/news_article.dart';
 
 class LinkPreviewCard extends StatelessWidget {
@@ -10,6 +11,7 @@ class LinkPreviewCard extends StatelessWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onChangeCategory;
   final bool isArchived;
+  final bool isLoading; // Show loading state while fetching preview
 
   const LinkPreviewCard({
     super.key,
@@ -19,12 +21,18 @@ class LinkPreviewCard extends StatelessWidget {
     this.onDelete,
     this.onChangeCategory,
     this.isArchived = false,
+    this.isLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isTech = article.category == 'tech';
+    
+    // Show loading skeleton when fetching preview
+    if (isLoading) {
+      return _buildLoadingCard();
+    }
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -252,5 +260,74 @@ class LinkPreviewCard extends StatelessWidget {
     if (diff.inDays < 1) return '${diff.inHours}h ago';
     if (diff.inDays < 7) return '${diff.inDays}d ago';
     return DateFormat('MMM d').format(date);
+  }
+
+  Widget _buildLoadingCard() {
+    return Shimmer.fromColors(
+      baseColor: const Color(0xFF1E2029),
+      highlightColor: const Color(0xFF2A2C38),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFF16181F),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Placeholder for image
+            Container(
+              height: 180,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E2029),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Placeholder for source row
+                  Row(
+                    children: [
+                      Container(width: 16, height: 16, color: const Color(0xFF1E2029)),
+                      const SizedBox(width: 8),
+                      Container(width: 80, height: 12, color: const Color(0xFF1E2029)),
+                      const Spacer(),
+                      Container(width: 60, height: 10, color: const Color(0xFF1E2029)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Placeholder for title
+                  Container(width: double.infinity, height: 18, color: const Color(0xFF1E2029)),
+                  const SizedBox(height: 8),
+                  Container(width: double.infinity * 0.7, height: 18, color: const Color(0xFF1E2029)),
+                  const SizedBox(height: 8),
+                  // Placeholder for description
+                  Container(width: double.infinity, height: 14, color: const Color(0xFF1E2029)),
+                  const SizedBox(height: 6),
+                  Container(width: double.infinity * 0.8, height: 14, color: const Color(0xFF1E2029)),
+                  const SizedBox(height: 16),
+                  // Placeholder for action buttons
+                  Row(
+                    children: [
+                      Expanded(child: Container(height: 36, color: const Color(0xFF1E2029))),
+                      const SizedBox(width: 8),
+                      Container(width: 36, height: 36, color: const Color(0xFF1E2029)),
+                      const SizedBox(width: 6),
+                      Container(width: 36, height: 36, color: const Color(0xFF1E2029)),
+                      const SizedBox(width: 6),
+                      Container(width: 36, height: 36, color: const Color(0xFF1E2029)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

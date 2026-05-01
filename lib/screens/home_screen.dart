@@ -312,8 +312,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                 itemCount: articles.length,
                 itemBuilder: (context, index) {
                   final article = articles[index];
+                  // Check if this specific article is being fetched
+                  final addArticleState = ref.watch(addArticleProvider);
+                  final isLoading = addArticleState.isArticleLoading(article.id);
+                  
                   return LinkPreviewCard(
                     article: article,
+                    isLoading: isLoading,
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
