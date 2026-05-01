@@ -89,13 +89,15 @@ class VoiceNavigationHandler {
 
     if (documents.isEmpty) {
       // Navigate to group but show empty state
-      Navigator.push(
-        _context,
-        MaterialPageRoute(
-          builder: (_) => DocGroupDetailScreen(groupId: matchingGroup!.id),
-        ),
-      );
-      _showSuccess('Opened ${matchingGroup.name} - no documents found');
+      if (mounted) {
+        Navigator.push(
+          _context,
+          MaterialPageRoute(
+            builder: (_) => DocGroupDetailScreen(groupId: matchingGroup!.id),
+          ),
+        );
+        _showSuccess('Opened ${matchingGroup.name} - no documents found');
+      }
       return;
     }
 
@@ -116,39 +118,37 @@ class VoiceNavigationHandler {
       return;
     }
 
-    // Navigate and open document
+    // Open document directly - skip group screen for cleaner UX
     if (!mounted) return;
 
-    // First navigate to the group
-    Navigator.push(
-      _context,
-      MaterialPageRoute(
-        builder: (_) => DocGroupDetailScreen(groupId: matchingGroup!.id),
-      ),
-    );
-
-    // Then open the document if it can be viewed in-app
     final ext = matchingDoc.fileExtension.toLowerCase();
     final isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].contains(ext);
     final isPdf = ext == 'pdf';
 
     if (isImage || isPdf) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (mounted) {
-        Navigator.push(
-          _context,
-          MaterialPageRoute(
-            builder: (_) => DocumentViewerScreen(document: matchingDoc!),
-          ),
-        );
-      }
+      // Navigate directly to document viewer
+      Navigator.push(
+        _context,
+        MaterialPageRoute(
+          builder: (_) => DocumentViewerScreen(document: matchingDoc!),
+        ),
+      );
       _showSuccess('Opened ${matchingDoc.name}');
     } else {
+      // For non-viewable files, open the group
+      Navigator.push(
+        _context,
+        MaterialPageRoute(
+          builder: (_) => DocGroupDetailScreen(groupId: matchingGroup!.id),
+        ),
+      );
       _showSuccess('Opened ${matchingGroup.name}');
     }
   }
 
   Future<void> _handleViewNews(VoiceIntent intent) async {
+    if (!mounted) return;
+    
     // Navigate to news screen
     Navigator.push(
       _context,
@@ -165,6 +165,8 @@ class VoiceNavigationHandler {
       _showError('Please specify what to search for');
       return;
     }
+
+    if (!mounted) return;
 
     // Navigate to news with search term
     // We'll store the search term in a provider that NewsHomeScreen can read

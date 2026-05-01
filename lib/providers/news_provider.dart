@@ -116,6 +116,9 @@ class AddArticleNotifier extends StateNotifier<AddArticleState> {
 
     state = state.copyWith(isLoading: true, error: null);
 
+    // Declare article outside try block so it's accessible in catch
+    late NewsArticle article;
+
     try {
       final repository = _ref.read(newsRepositoryProvider);
       
@@ -126,7 +129,7 @@ class AddArticleNotifier extends StateNotifier<AddArticleState> {
       }
 
       // Add article immediately with just the URL so it appears in the list
-      var article = await repository.addArticle(url: normalizedUrl);
+      article = await repository.addArticle(url: normalizedUrl);
       
       // Track this article as loading
       state = state.copyWith(
@@ -170,7 +173,13 @@ class AddArticleNotifier extends StateNotifier<AddArticleState> {
       state = state.copyWith(isLoading: false, loadingArticleIds: newLoadingIds);
       return article;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: 'Failed to add article');
+      // Remove article from loading set on error - CRITICAL FIX
+      final newLoadingIds = Set<String>.from(state.loadingArticleIds)..remove(article.id);
+      state = state.copyWith(
+        isLoading: false, 
+        error: 'Failed to add article: $e',
+        loadingArticleIds: newLoadingIds,
+      );
       return null;
     }
   }

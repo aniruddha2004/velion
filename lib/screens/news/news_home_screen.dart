@@ -36,6 +36,7 @@ class _NewsHomeScreenState extends ConsumerState<NewsHomeScreen> with SingleTick
       if (voiceSearch != null && voiceSearch.isNotEmpty) {
         _searchController.text = voiceSearch;
         setState(() {
+          _isSearching = true;
           _searchQuery = voiceSearch;
         });
         // Clear the voice search after using it

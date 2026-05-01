@@ -45,15 +45,23 @@ class _VoiceOverlayState extends ConsumerState<VoiceOverlay> {
     final intent = await notifier.listenForCommand();
     
     if (mounted && intent.type.toString() != 'VoiceIntentType.unknown') {
-      // Execute navigation
-      final navigator = VoiceNavigationHandler(ref, context);
-      await navigator.executeIntent(intent);
+      // Get root navigator context BEFORE closing dialog
+      final rootContext = Navigator.of(context, rootNavigator: true).context;
       
-      // Close overlay after navigation
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Close overlay FIRST before navigation
+      widget.onClose?.call();
+      
+      // Small delay to ensure dialog is closed
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      // Execute navigation using root context
       if (mounted) {
-        widget.onClose?.call();
+        final navigator = VoiceNavigationHandler(ref, rootContext);
+        await navigator.executeIntent(intent);
       }
+    } else if (mounted && intent.type.toString() == 'VoiceIntentType.unknown') {
+      // Unknown command - close overlay
+      widget.onClose?.call();
     }
   }
 
