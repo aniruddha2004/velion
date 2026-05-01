@@ -29,7 +29,8 @@ class NewsArticleAdapter extends TypeAdapter<NewsArticle> {
       category: fields[9] as String,
       isArchived: fields[10] as bool,
       fullContent: fields[11] as String?,
-    )..aiSummary = fields[12] as String?;
+      aiSummary: fields[12] as String?,
+    );
   }
 
   @override

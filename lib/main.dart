@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'models/news_article.dart';
+import 'models/doc_group.dart';
+import 'models/doc_document.dart';
 import 'screens/main_shell.dart';
 import 'services/objectbox_service.dart';
 
@@ -23,7 +25,11 @@ void main() async {
 
   await Hive.initFlutter();
   Hive.registerAdapter(NewsArticleAdapter());
+  Hive.registerAdapter(DocGroupAdapter());
+  Hive.registerAdapter(DocDocumentAdapter());
   await Hive.openBox<NewsArticle>('newsArticles');
+  await Hive.openBox<DocGroup>('docGroups');
+  await Hive.openBox<DocDocument>('docDocuments');
 
   // Initialize ObjectBox
   await ObjectBoxService().store;
