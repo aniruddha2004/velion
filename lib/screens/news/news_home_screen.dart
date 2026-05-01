@@ -17,6 +17,7 @@ class _NewsHomeScreenState extends ConsumerState<NewsHomeScreen> with SingleTick
   late TabController _tabController;
   final _searchController = TextEditingController();
   bool _isSearching = false;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -240,17 +241,60 @@ class _NewsHomeScreenState extends ConsumerState<NewsHomeScreen> with SingleTick
 
             const SizedBox(height: 12),
 
-            // Article lists
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildArticleList(articlesProvider),
-                  _buildArticleList(techArticlesProvider),
-                  _buildArticleList(generalArticlesProvider),
-                  _buildArticleList(archivedArticlesProvider, isArchivedTab: true),
-                ],
+            // Search Bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF16181F),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFF1E2029)),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Search articles...',
+                    hintStyle: const TextStyle(color: Color(0xFF5A5A6A)),
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFF5A5A6A)),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, color: Color(0xFF5A5A6A)),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {
+                                _searchQuery = '';
+                              });
+                            },
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                ),
               ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Article lists or Search Results
+            Expanded(
+              child: _searchQuery.isNotEmpty
+                  ? _buildSearchResults()
+                  : TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildArticleList(articlesProvider),
+                        _buildArticleList(techArticlesProvider),
+                        _buildArticleList(generalArticlesProvider),
+                        _buildArticleList(archivedArticlesProvider, isArchivedTab: true),
+                      ],
+                    ),
             ),
           ],
         ),
@@ -265,6 +309,102 @@ class _NewsHomeScreenState extends ConsumerState<NewsHomeScreen> with SingleTick
         },
         child: const Icon(Icons.add_rounded, size: 28),
       ) : null,
+    );
+  }
+
+  Widget _buildSearchResults() {
+    final theme = Theme.of(context);
+    return Consumer(
+      builder: (context, ref, _) {
+        final searchAsync = ref.watch(articleSearchProvider(_searchQuery));
+        return RefreshIndicator(
+          onRefresh: () async => _invalidateAll(),
+          color: const Color(0xFF6878FF),
+          backgroundColor: const Color(0xFF16181F),
+          child: searchAsync.when(
+            data: (articles) {
+              if (articles.isEmpty) {
+                return ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 80),
+                      child: Column(
+                        children: [
+                          const Icon(
+                            Icons.search_off_outlined,
+                            size: 72,
+                            color: Color(0xFF2A2C38),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            'No results found',
+                            style: theme.textTheme.titleMedium?.copyWith(color: const Color(0xFF5A5A6A)),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Try a different search term',
+                            style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF5A5A6A)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }
+              return ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: articles.length,
+                itemBuilder: (context, index) {
+                  final article = articles[index];
+                  final addArticleState = ref.watch(addArticleProvider);
+                  final isLoading = addArticleState.isArticleLoading(article.id);
+
+                  return LinkPreviewCard(
+                    article: article,
+                    isLoading: isLoading,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ArticleDetailScreen(article: article),
+                      ),
+                    ),
+                    onArchive: article.isArchived
+                        ? () async {
+                            await ref.read(newsRepositoryProvider).unarchiveArticle(article.id);
+                            _invalidateAll();
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Article unarchived')),
+                              );
+                            }
+                          }
+                        : () async {
+                            await ref.read(newsRepositoryProvider).archiveArticle(article.id);
+                            _invalidateAll();
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Article archived')),
+                              );
+                            }
+                          },
+                    onDelete: () => _showDeleteConfirmation(article),
+                    onChangeCategory: () => _showCategoryPicker(article),
+                    isArchived: article.isArchived,
+                  );
+                },
+              );
+            },
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(40),
+                child: CircularProgressIndicator(color: Color(0xFF6878FF)),
+              ),
+            ),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+        );
+      },
     );
   }
 

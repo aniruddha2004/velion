@@ -58,6 +58,13 @@ final archivedCountProvider = FutureProvider<int>((ref) async {
   return await repository.getArchivedCount();
 });
 
+// Search provider
+final articleSearchProvider = FutureProvider.family<List<NewsArticle>, String>((ref, query) async {
+  if (query.isEmpty) return [];
+  final repository = ref.watch(newsRepositoryProvider);
+  return await repository.searchArticles(query);
+});
+
 class AddArticleState {
   final bool isLoading;
   final String? error;

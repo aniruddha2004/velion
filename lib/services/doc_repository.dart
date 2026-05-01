@@ -66,6 +66,116 @@ class DocRepository {
     await box.put(group.id, updated);
   }
 
+  Future<void> renameGroup(String id, String newName, {String? newDescription}) async {
+    final box = await _groupsBoxAsync;
+    final group = await getGroupById(id);
+    if (group != null) {
+      final updated = group.copyWith(
+        name: newName,
+        description: newDescription ?? group.description,
+        updatedAt: DateTime.now(),
+      );
+      await box.put(id, updated);
+    }
+  }
+
+  Future<void> renameDocument(String id, String newName, {String? newDescription}) async {
+    final box = await _documentsBoxAsync;
+    final doc = await getDocumentById(id);
+    if (doc != null) {
+      final updated = doc.copyWith(
+        name: newName,
+        description: newDescription ?? doc.description,
+        updatedAt: DateTime.now(),
+      );
+      await box.put(id, updated);
+    }
+  }
+
+  Future<DocDocument?> copyDocumentToGroup(String documentId, String targetGroupId) async {
+    final documentsBox = await _documentsBoxAsync;
+    final groupsBox = await _groupsBoxAsync;
+    
+    final sourceDoc = await getDocumentById(documentId);
+    if (sourceDoc == null) return null;
+    
+    // Copy the actual file
+    final sourceFile = File(sourceDoc.filePath);
+    if (!await sourceFile.exists()) return null;
+    
+    final docsDir = await _docsDirectory;
+    final extension = path.extension(sourceDoc.filePath);
+    final newFileName = '${const Uuid().v4()}$extension';
+    final destPath = path.join(docsDir.path, newFileName);
+    await sourceFile.copy(destPath);
+    
+    // Create new document record
+    final newDoc = DocDocument.create(
+      groupId: targetGroupId,
+      name: sourceDoc.name,
+      description: sourceDoc.description,
+      filePath: destPath,
+      mimeType: sourceDoc.mimeType,
+      fileSize: sourceDoc.fileSize,
+    );
+    
+    await documentsBox.put(newDoc.id, newDoc);
+    
+    // Update target group's document list
+    final targetGroup = await getGroupById(targetGroupId);
+    if (targetGroup != null) {
+      final updatedIds = [...targetGroup.documentIds, newDoc.id];
+      final updatedGroup = targetGroup.copyWith(
+        documentIds: updatedIds,
+        updatedAt: DateTime.now(),
+      );
+      await groupsBox.put(targetGroupId, updatedGroup);
+    }
+    
+    return newDoc;
+  }
+
+  Future<DocDocument?> moveDocumentToGroup(String documentId, String targetGroupId) async {
+    final documentsBox = await _documentsBoxAsync;
+    final groupsBox = await _groupsBoxAsync;
+    
+    final doc = await getDocumentById(documentId);
+    if (doc == null) return null;
+    
+    final sourceGroupId = doc.groupId;
+    
+    // Update document's group
+    final updatedDoc = doc.copyWith(
+      groupId: targetGroupId,
+      updatedAt: DateTime.now(),
+    );
+    await documentsBox.put(documentId, updatedDoc);
+    
+    // Remove from source group
+    final sourceGroup = await getGroupById(sourceGroupId);
+    if (sourceGroup != null) {
+      final updatedIds = sourceGroup.documentIds.where((id) => id != documentId).toList();
+      final updatedGroup = sourceGroup.copyWith(
+        documentIds: updatedIds,
+        updatedAt: DateTime.now(),
+      );
+      await groupsBox.put(sourceGroupId, updatedGroup);
+    }
+    
+    // Add to target group
+    final targetGroup = await getGroupById(targetGroupId);
+    if (targetGroup != null) {
+      final updatedIds = [...targetGroup.documentIds, documentId];
+      final updatedGroup = targetGroup.copyWith(
+        documentIds: updatedIds,
+        updatedAt: DateTime.now(),
+      );
+      await groupsBox.put(targetGroupId, updatedGroup);
+    }
+    
+    return updatedDoc;
+  }
+
   Future<void> deleteGroup(String id) async {
     final groupsBox = await _groupsBoxAsync;
     final documentsBox = await _documentsBoxAsync;

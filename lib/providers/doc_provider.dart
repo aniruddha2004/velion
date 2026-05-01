@@ -76,6 +76,18 @@ class DocGroupNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  Future<void> renameGroup(String id, String newName, {String? newDescription}) async {
+    state = const AsyncValue.loading();
+    try {
+      final repository = _ref.read(docRepositoryProvider);
+      await repository.renameGroup(id, newName, newDescription: newDescription);
+      _ref.invalidate(docGroupsProvider);
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
   void clearError() {
     state = const AsyncValue.data(null);
   }
@@ -125,6 +137,52 @@ class DocDocumentNotifier extends StateNotifier<AsyncValue<void>> {
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> renameDocument(String id, String newName, {String? newDescription, required String groupId}) async {
+    state = const AsyncValue.loading();
+    try {
+      final repository = _ref.read(docRepositoryProvider);
+      await repository.renameDocument(id, newName, newDescription: newDescription);
+      _ref.invalidate(docDocumentsProvider(groupId));
+      _ref.invalidate(docDocumentSearchProvider(''));
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<DocDocument?> copyDocumentToGroup(String documentId, String sourceGroupId, String targetGroupId) async {
+    state = const AsyncValue.loading();
+    try {
+      final repository = _ref.read(docRepositoryProvider);
+      final newDoc = await repository.copyDocumentToGroup(documentId, targetGroupId);
+      _ref.invalidate(docDocumentsProvider(sourceGroupId));
+      _ref.invalidate(docDocumentsProvider(targetGroupId));
+      _ref.invalidate(docGroupsProvider);
+      _ref.invalidate(docDocumentCountProvider);
+      state = const AsyncValue.data(null);
+      return newDoc;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return null;
+    }
+  }
+
+  Future<DocDocument?> moveDocumentToGroup(String documentId, String sourceGroupId, String targetGroupId) async {
+    state = const AsyncValue.loading();
+    try {
+      final repository = _ref.read(docRepositoryProvider);
+      final movedDoc = await repository.moveDocumentToGroup(documentId, targetGroupId);
+      _ref.invalidate(docDocumentsProvider(sourceGroupId));
+      _ref.invalidate(docDocumentsProvider(targetGroupId));
+      _ref.invalidate(docGroupsProvider);
+      state = const AsyncValue.data(null);
+      return movedDoc;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return null;
     }
   }
 

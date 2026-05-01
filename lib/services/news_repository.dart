@@ -164,4 +164,16 @@ class NewsRepository {
     final articles = await getArchivedArticles();
     return articles.length;
   }
+
+  Future<List<NewsArticle>> searchArticles(String query) async {
+    final articles = await getAllArticles();
+    final lowerQuery = query.toLowerCase();
+    return articles.where((article) {
+      final titleMatch = article.title?.toLowerCase().contains(lowerQuery) ?? false;
+      final descMatch = article.description?.toLowerCase().contains(lowerQuery) ?? false;
+      final urlMatch = article.url.toLowerCase().contains(lowerQuery);
+      final siteMatch = article.siteName?.toLowerCase().contains(lowerQuery) ?? false;
+      return titleMatch || descMatch || urlMatch || siteMatch;
+    }).toList();
+  }
 }
