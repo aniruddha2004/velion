@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/news_provider.dart';
-import 'add_article_screen.dart';
-import 'article_detail_screen.dart';
+import 'main_shell.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -18,11 +16,7 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final articlesAsync = ref.watch(articlesProvider);
-    final unreadCountAsync = ref.watch(unreadCountProvider);
     final articleCountAsync = ref.watch(articleCountProvider);
-    final techCountAsync = ref.watch(techCountProvider);
-    final generalCountAsync = ref.watch(generalCountProvider);
 
     return Scaffold(
       body: Stack(
@@ -65,308 +59,159 @@ class DashboardScreen extends ConsumerWidget {
           ),
           // Main content
           SafeArea(
-            child: RefreshIndicator(
-              onRefresh: () async {
-                ref.invalidate(articlesProvider);
-                ref.invalidate(archivedArticlesProvider);
-                ref.invalidate(techArticlesProvider);
-                ref.invalidate(generalArticlesProvider);
-                ref.invalidate(unreadCountProvider);
-                ref.invalidate(articleCountProvider);
-                ref.invalidate(techCountProvider);
-                ref.invalidate(generalCountProvider);
-                ref.invalidate(archivedCountProvider);
-              },
-              color: const Color(0xFF6878FF),
-              backgroundColor: const Color(0xFF16181F),
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  // Header
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Top bar
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFF6878FF), Color(0xFF3B82F6)],
-                                  ),
-                                  borderRadius: BorderRadius.circular(14),
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                // Header
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Top bar
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF6878FF), Color(0xFF3B82F6)],
                                 ),
-                                child: const Icon(
-                                  Icons.auto_awesome,
-                                  color: Colors.white,
-                                  size: 22,
-                                ),
+                                borderRadius: BorderRadius.circular(14),
                               ),
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1E2029),
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: const Icon(
-                                  Icons.notifications_outlined,
-                                  color: Color(0xFFA6ADBD),
-                                  size: 22,
-                                ),
+                              child: const Icon(
+                                Icons.auto_awesome,
+                                color: Colors.white,
+                                size: 22,
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 28),
-                          // Greeting
-                          Text(
-                            _getGreeting(),
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: const Color(0xFFA6ADBD),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Text(
-                                  'Welcome to ',
-                                  style: theme.textTheme.headlineLarge,
-                                ),
-                                ShaderMask(
-                                  shaderCallback: (bounds) => const LinearGradient(
-                                    colors: [Color(0xFF6878FF), Color(0xFFF4F6FB)],
-                                  ).createShader(bounds),
-                                  child: Text(
-                                    'VELION',
-                                    style: theme.textTheme.headlineLarge?.copyWith(
-                                      color: Colors.white,
-                                      letterSpacing: 0.18,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1E2029),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: const Icon(
+                                Icons.notifications_outlined,
+                                color: Color(0xFFA6ADBD),
+                                size: 22,
+                              ),
                             ),
-                          const SizedBox(height: 32),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Stats row
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Row(
-                        children: [
-                          _StatCard(
-                            icon: Icons.article_outlined,
-                            label: 'Total',
-                            valueAsync: articleCountAsync,
-                            gradient: const [Color(0xFF6878FF), Color(0xFF8B7FFF)],
-                          ),
-                          const SizedBox(width: 12),
-                          _StatCard(
-                            icon: Icons.computer_outlined,
-                            label: 'Tech',
-                            valueAsync: techCountAsync,
-                            gradient: const [Color(0xFF3B82F6), Color(0xFF60A5FA)],
-                          ),
-                          const SizedBox(width: 12),
-                          _StatCard(
-                            icon: Icons.public_outlined,
-                            label: 'General',
-                            valueAsync: generalCountAsync,
-                            gradient: const [Color(0xFF4ECDC4), Color(0xFF44B09E)],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Quick Add Button
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-                      child: GestureDetector(
-                        onTap: () async {
-                          final result = await Navigator.push<bool>(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AddArticleScreen(),
-                            ),
-                          );
-                          if (result == true) {
-                            ref.invalidate(articlesProvider);
-                            ref.invalidate(unreadCountProvider);
-                            ref.invalidate(articleCountProvider);
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF6878FF), Color(0xFF3B82F6)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF6878FF).withOpacity(0.3),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  Icons.add_link_rounded,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Add New Article',
-                                      style: theme.textTheme.titleMedium?.copyWith(
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Paste a link or share from any app',
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        color: Colors.white.withOpacity(0.7),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(
-                                Icons.arrow_forward_ios_rounded,
-                                color: Colors.white.withOpacity(0.7),
-                                size: 16,
-                              ),
-                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 28),
+                        // Greeting
+                        Text(
+                          _getGreeting(),
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: const Color(0xFFA6ADBD),
                           ),
                         ),
-                      ),
-                    ),
-                  ),
-
-                  // Recent Saves
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Recent Saves',
-                            style: theme.textTheme.titleLarge,
-                          ),
-                          articlesAsync.when(
-                            data: (articles) => articles.length > 3
-                                ? TextButton(
-                                    onPressed: () {
-                                      // Switch to News tab by finding MainShell
-                                    },
-                                    child: const Text('See all'),
-                                  )
-                                : const SizedBox.shrink(),
-                            loading: () => const SizedBox.shrink(),
-                            error: (_, __) => const SizedBox.shrink(),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Recent articles
-                  articlesAsync.when(
-                    data: (articles) {
-                      if (articles.isEmpty) {
-                        return SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.article_outlined,
-                                  size: 64,
-                                  color: const Color(0xFF2A2C38),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'No articles yet',
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    color: const Color(0xFF5A5A6A),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Save your first article to get started',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: const Color(0xFF2A2C38),
-                                  ),
-                                ),
-                              ],
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Text(
+                              'Welcome to ',
+                              style: theme.textTheme.headlineLarge,
                             ),
-                          ),
-                        );
-                      }
-
-                      final recent = articles.take(3).toList();
-                      return SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final article = recent[index];
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
-                              child: _RecentArticleTile(
-                                article: article,
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ArticleDetailScreen(article: article),
-                                  ),
+                            ShaderMask(
+                              shaderCallback: (bounds) => const LinearGradient(
+                                colors: [Color(0xFF6878FF), Color(0xFFF4F6FB)],
+                              ).createShader(bounds),
+                              child: Text(
+                                'VELION',
+                                style: theme.textTheme.headlineLarge?.copyWith(
+                                  color: Colors.white,
+                                  letterSpacing: 0.18,
                                 ),
                               ),
-                            );
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Your personal assistant for news, docs, and more.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: const Color(0xFF5A5A6A),
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Quick Actions Section
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Quick Actions',
+                          style: theme.textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 16),
+                        _QuickActionCard(
+                          icon: Icons.explore_outlined,
+                          title: 'Discover Features',
+                          subtitle: 'Access News, Docs, and more',
+                          gradient: const [Color(0xFF6878FF), Color(0xFF3B82F6)],
+                          onTap: () {
+                            // Switch to Discover tab
+                            final mainShellState = context.findAncestorStateOfType<_MainShellState>();
+                            mainShellState?._onTabTapped(1);
                           },
-                          childCount: recent.length,
                         ),
-                      );
-                    },
-                    loading: () => const SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.all(40),
-                        child: Center(
-                          child: CircularProgressIndicator(color: Color(0xFF6878FF)),
-                        ),
-                      ),
+                      ],
                     ),
-                    error: (_, __) => const SliverToBoxAdapter(child: SizedBox.shrink()),
                   ),
+                ),
 
-                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
-                ],
-              ),
+                // Activity Overview
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+                    child: Text(
+                      'Activity Overview',
+                      style: theme.textTheme.titleLarge,
+                    ),
+                  ),
+                ),
+
+                // News Stats Card
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: _OverviewCard(
+                      icon: Icons.article_outlined,
+                      title: 'News Articles',
+                      subtitle: 'Saved articles waiting to be read',
+                      valueAsync: articleCountAsync,
+                      color: const Color(0xFF6878FF),
+                    ),
+                  ),
+                ),
+
+                // Docs Stats Card (placeholder for now)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+                    child: _OverviewCard(
+                      icon: Icons.folder_outlined,
+                      title: 'Documents',
+                      subtitle: 'Files organized in groups',
+                      value: 0,
+                      color: const Color(0xFF4ECDC4),
+                    ),
+                  ),
+                ),
+
+                const SliverToBoxAdapter(child: SizedBox(height: 100)),
+              ],
             ),
           ),
         ],
@@ -375,64 +220,84 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
-class _StatCard extends StatelessWidget {
+class _QuickActionCard extends StatelessWidget {
   final IconData icon;
-  final String label;
-  final AsyncValue<int> valueAsync;
+  final String title;
+  final String subtitle;
   final List<Color> gradient;
+  final VoidCallback onTap;
 
-  const _StatCard({
+  const _QuickActionCard({
     required this.icon,
-    required this.label,
-    required this.valueAsync,
+    required this.title,
+    required this.subtitle,
     required this.gradient,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFF16181F),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFF1E2029), width: 1),
+          gradient: LinearGradient(
+            colors: gradient,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: gradient[0].withOpacity(0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-        child: Column(
+        child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                gradient: LinearGradient(colors: gradient),
-                borderRadius: BorderRadius.circular(10),
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: Colors.white, size: 18),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 24,
+              ),
             ),
-            const SizedBox(height: 10),
-            valueAsync.when(
-              data: (value) => Text(
-                '$value',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
               ),
-              loading: () => const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6878FF)),
-              ),
-              error: (_, __) => const Text('-', style: TextStyle(color: Colors.white, fontSize: 22)),
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFFA6ADBD),
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-              ),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Colors.white.withOpacity(0.7),
+              size: 16,
             ),
           ],
         ),
@@ -441,97 +306,98 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _RecentArticleTile extends StatelessWidget {
-  final dynamic article;
-  final VoidCallback onTap;
+class _OverviewCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final AsyncValue<int>? valueAsync;
+  final int? value;
+  final Color color;
 
-  const _RecentArticleTile({required this.article, required this.onTap});
+  const _OverviewCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.valueAsync,
+    this.value,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xFF16181F),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF1E2029), width: 0.5),
-        ),
-        child: Row(
-          children: [
-            // Image or placeholder
-            if (article.imageUrl != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: CachedNetworkImage(
-                  imageUrl: article.imageUrl!,
-                  width: 56,
-                  height: 56,
-                  fit: BoxFit.cover,
-                  errorWidget: (_, __, ___) => _imagePlaceholder(),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF16181F),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF1E2029), width: 1),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              )
-            else
-              _imagePlaceholder(),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    article.displayTitle,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: Color(0xFF5A5A6A),
+                    fontSize: 12,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    article.hostName,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: const Color(0xFF6878FF),
-                    ),
-                  ),
-                ],
+                ),
+              ],
+            ),
+          ),
+          if (valueAsync != null)
+            valueAsync!.when(
+              data: (count) => Text(
+                '$count',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              loading: () => const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6878FF)),
+              ),
+              error: (_, __) => const Text('-', style: TextStyle(color: Colors.white, fontSize: 24)),
+            )
+          else if (value != null)
+            Text(
+              '$value',
+              style: TextStyle(
+                color: color,
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
               ),
             ),
-            if (!article.isRead)
-              Container(
-                width: 8,
-                height: 8,
-                margin: const EdgeInsets.only(left: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF6878FF),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF6878FF).withOpacity(0.5),
-                      blurRadius: 6,
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
+        ],
       ),
-    );
-  }
-
-  Widget _imagePlaceholder() {
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E2029), Color(0xFF16181F)],
-        ),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: const Icon(Icons.article_outlined, color: Color(0xFF2A2C38), size: 24),
     );
   }
 }

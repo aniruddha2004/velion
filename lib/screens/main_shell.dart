@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'dart:async';
 import 'dashboard_screen.dart';
-import 'home_screen.dart';
 import 'discover_screen.dart';
 import 'settings_screen.dart';
 import '../providers/news_provider.dart';
@@ -21,7 +20,6 @@ class _MainShellState extends ConsumerState<MainShell> {
   bool _initialShareProcessed = false;
 
   final List<GlobalKey<NavigatorState>> _navigatorKeys = [
-    GlobalKey<NavigatorState>(),
     GlobalKey<NavigatorState>(),
     GlobalKey<NavigatorState>(),
     GlobalKey<NavigatorState>(),
@@ -164,12 +162,12 @@ class _MainShellState extends ConsumerState<MainShell> {
   void _handleSharedUrl(String url) async {
     debugPrint('Handling shared URL: $url');
     
-    // Switch to News tab and pop to root
+    // Switch to Discover tab and pop to root
     setState(() {
       _currentIndex = 1;
     });
     
-    // Pop any routes in News tab to show the list
+    // Pop any routes in Discover tab to show the list
     _navigatorKeys[1].currentState?.popUntil((route) => route.isFirst);
 
     final notifier = ref.read(addArticleProvider.notifier);
@@ -210,9 +208,8 @@ class _MainShellState extends ConsumerState<MainShell> {
         index: _currentIndex,
         children: [
           _buildNavigator(0, const DashboardScreen()),
-          _buildNavigator(1, const HomeScreen()),
-          _buildNavigator(2, const DiscoverScreen()),
-          _buildNavigator(3, const SettingsScreen()),
+          _buildNavigator(1, const DiscoverScreen()),
+          _buildNavigator(2, const SettingsScreen()),
         ],
       ),
       bottomNavigationBar: Container(
@@ -226,18 +223,13 @@ class _MainShellState extends ConsumerState<MainShell> {
           onTap: _onTabTapped,
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_outlined),
-              activeIcon: Icon(Icons.dashboard),
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home),
               label: 'Home',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.article_outlined),
-              activeIcon: Icon(Icons.article),
-              label: 'News',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.explore_outlined),
-              activeIcon: Icon(Icons.explore),
+              icon: Icon(Icons.apps_outlined),
+              activeIcon: Icon(Icons.apps),
               label: 'Discover',
             ),
             BottomNavigationBarItem(
