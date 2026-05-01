@@ -15,6 +15,8 @@ class NewsHomeScreen extends ConsumerStatefulWidget {
 
 class _NewsHomeScreenState extends ConsumerState<NewsHomeScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final _searchController = TextEditingController();
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -28,6 +30,7 @@ class _NewsHomeScreenState extends ConsumerState<NewsHomeScreen> with SingleTick
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
