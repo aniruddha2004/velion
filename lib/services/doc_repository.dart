@@ -229,7 +229,7 @@ class DocRepository {
     // Copy file to app directory
     final docsDir = await _docsDirectory;
     final extension = path.extension(sourceFile.path);
-    final fileName = '$_uuid.v4()$extension';
+    final fileName = '${_uuid.v4()}$extension';
     final destPath = path.join(docsDir.path, fileName);
     await sourceFile.copy(destPath);
     
