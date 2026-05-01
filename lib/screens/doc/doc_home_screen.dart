@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/doc_provider.dart';
 import '../../models/doc_group.dart';
+import '../../widgets/voice_overlay.dart';
 import 'doc_group_detail_screen.dart';
 import 'doc_create_group_screen.dart';
 
@@ -147,6 +148,11 @@ class _DocHomeScreenState extends ConsumerState<DocHomeScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0D12),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showVoiceOverlay(context),
+        backgroundColor: const Color(0xFF4ECDC4),
+        child: const Icon(Icons.mic, color: Colors.white),
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -385,6 +391,16 @@ class _DocHomeScreenState extends ConsumerState<DocHomeScreen> {
       ),
     );
   }
+
+  void _showVoiceOverlay(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => VoiceOverlay(
+        onClose: () => Navigator.pop(context),
+      ),
+    );
+  }
 }
 
 class _GroupCard extends StatelessWidget {
@@ -517,4 +533,5 @@ class _GroupCard extends StatelessWidget {
       ),
     );
   }
+
 }

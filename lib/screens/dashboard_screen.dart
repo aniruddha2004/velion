@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/news_provider.dart';
+import '../widgets/voice_overlay.dart';
+import '../providers/voice_provider.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -86,16 +88,30 @@ class DashboardScreen extends ConsumerWidget {
                                 size: 22,
                               ),
                             ),
+                            // Voice button
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1E2029),
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF4ECDC4), Color(0xFF44B09E)],
+                                ),
                                 borderRadius: BorderRadius.circular(14),
                               ),
-                              child: const Icon(
-                                Icons.notifications_outlined,
-                                color: Color(0xFFA6ADBD),
-                                size: 22,
+                              child: GestureDetector(
+                                onTap: () {
+                                  showDialog(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder: (context) => VoiceOverlay(
+                                      onClose: () => Navigator.pop(context),
+                                    ),
+                                  );
+                                },
+                                child: const Icon(
+                                  Icons.mic,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
                               ),
                             ),
                           ],
@@ -394,6 +410,16 @@ class _OverviewCard extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  void _showVoiceOverlay(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => VoiceOverlay(
+        onClose: () => Navigator.pop(context),
       ),
     );
   }

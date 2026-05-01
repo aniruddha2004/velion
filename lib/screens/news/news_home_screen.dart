@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/news_article.dart';
 import '../../providers/news_provider.dart';
 import '../../widgets/link_preview_card.dart';
+import '../../providers/voice_provider.dart';
+import '../../services/voice_navigation_handler.dart';
+import '../../widgets/voice_overlay.dart';
 import '../add_article_screen.dart';
 import '../article_detail_screen.dart';
 
@@ -25,6 +28,19 @@ class _NewsHomeScreenState extends ConsumerState<NewsHomeScreen> with SingleTick
     _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(() {
       if (mounted) setState(() {});
+    });
+    
+    // Check for voice search term
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final voiceSearch = ref.read(voiceSearchProvider);
+      if (voiceSearch != null && voiceSearch.isNotEmpty) {
+        _searchController.text = voiceSearch;
+        setState(() {
+          _searchQuery = voiceSearch;
+        });
+        // Clear the voice search after using it
+        ref.read(voiceSearchProvider.notifier).state = null;
+      }
     });
   }
 
@@ -299,16 +315,32 @@ class _NewsHomeScreenState extends ConsumerState<NewsHomeScreen> with SingleTick
           ],
         ),
       ),
-      floatingActionButton: _tabController.index != 3 ? FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.push<bool>(
-            context,
-            MaterialPageRoute(builder: (context) => const AddArticleScreen()),
-          );
-          if (result == true) _invalidateAll();
-        },
-        child: const Icon(Icons.add_rounded, size: 28),
-      ) : null,
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Voice button
+          FloatingActionButton.small(
+            onPressed: () => _showVoiceOverlay(context),
+            backgroundColor: const Color(0xFF4ECDC4),
+            heroTag: 'voiceBtn',
+            child: const Icon(Icons.mic, color: Colors.white),
+          ),
+          const SizedBox(height: 8),
+          // Add button (only on non-archived tabs)
+          if (_tabController.index != 3)
+            FloatingActionButton(
+              onPressed: () async {
+                final result = await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AddArticleScreen()),
+                );
+                if (result == true) _invalidateAll();
+              },
+              heroTag: 'addBtn',
+              child: const Icon(Icons.add_rounded, size: 28),
+            ),
+        ],
+      ),
     );
   }
 
@@ -504,6 +536,16 @@ class _NewsHomeScreenState extends ConsumerState<NewsHomeScreen> with SingleTick
           ),
         );
       },
+    );
+  }
+
+  void _showVoiceOverlay(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => VoiceOverlay(
+        onClose: () => Navigator.pop(context),
+      ),
     );
   }
 }

@@ -162,13 +162,13 @@ class _MainShellState extends ConsumerState<MainShell> {
       _isProcessingShare = false;
     });
 
-    // Decision logic with wrong-type popup
+    // Decision logic - direct routing based on content type
     if (hasUrl && !hasFile) {
-      // Only URLs - show wrong type popup for Docs, then go to News
-      _showWrongTypePopupThenNews(url!);
+      // Only URLs - go directly to News
+      _handleNewsShare(url!, fromDocs: false);
     } else if (hasFile && !hasUrl) {
-      // Only files - show wrong type popup for News, then go to Docs
-      _showWrongTypePopupThenDocs(fileShares);
+      // Only files - go directly to Docs
+      _handleDocsShare(fileShares, fromNews: false);
     } else if (hasUrl && hasFile) {
       // Mixed - show dialog to choose
       _showMixedShareDialog(url!, fileShares);
@@ -176,40 +176,14 @@ class _MainShellState extends ConsumerState<MainShell> {
       // Fallback - treat as URL if any http found
       for (final file in files) {
         if (file.path.startsWith('http')) {
-          _showWrongTypePopupThenNews(file.path);
+          _handleNewsShare(file.path, fromDocs: false);
           return;
         }
       }
       // Otherwise treat as file
       if (files.isNotEmpty) {
-        _showWrongTypePopupThenDocs(files);
+        _handleDocsShare(files, fromNews: false);
       }
-    }
-  }
-
-  void _showWrongTypePopupThenNews(String url) async {
-    // Check if we came from Docs share target (we need to detect this somehow)
-    // For now, always show the dialog to confirm user intent
-    final shouldProceed = await _showWrongShareTypeDialog(
-      title: 'Wrong Section?',
-      message: 'It looks like you\'re sharing a link/article. This should go to Velion News instead of Docs.',
-      correctDestination: 'Go to News',
-    );
-    
-    if (shouldProceed && mounted) {
-      _handleNewsShare(url, fromDocs: false);
-    }
-  }
-
-  void _showWrongTypePopupThenDocs(List<SharedMediaFile> files) async {
-    final shouldProceed = await _showWrongShareTypeDialog(
-      title: 'Wrong Section?',
-      message: 'It looks like you\'re sharing file(s). This should go to Velion Docs instead of News.',
-      correctDestination: 'Go to Docs',
-    );
-    
-    if (shouldProceed && mounted) {
-      _handleDocsShare(files, fromNews: false);
     }
   }
   

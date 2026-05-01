@@ -54,6 +54,10 @@ dependencies:
   # File viewers
   photo_view: ^0.14.0
   pdfx: ^2.6.0
+  
+  # Voice recognition
+  speech_to_text: ^6.6.0
+  permission_handler: ^11.3.0
 
 dev_dependencies:
   flutter_test:
