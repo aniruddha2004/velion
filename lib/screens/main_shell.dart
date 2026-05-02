@@ -12,6 +12,7 @@ import 'doc/doc_home_screen.dart';
 import 'doc/doc_group_detail_screen.dart';
 import '../providers/news_provider.dart';
 import '../providers/doc_provider.dart';
+import '../widgets/persistent_voice_overlay.dart';
 import '../models/doc_group.dart';
 import '../models/doc_document.dart';
 
@@ -405,12 +406,17 @@ class _MainShellState extends ConsumerState<MainShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
+      body: Stack(
         children: [
-          _buildNavigator(0, const DashboardScreen()),
-          _buildNavigator(1, const DiscoverScreen()),
-          _buildNavigator(2, const SettingsScreen()),
+          IndexedStack(
+            index: _currentIndex,
+            children: [
+              _buildNavigator(0, const DashboardScreen()),
+              _buildNavigator(1, const DiscoverScreen()),
+              _buildNavigator(2, const SettingsScreen()),
+            ],
+          ),
+          const PersistentVoiceOverlay(),
         ],
       ),
       bottomNavigationBar: Container(
