@@ -58,6 +58,9 @@ dependencies:
   # Voice recognition
   speech_to_text: ^6.6.0
   permission_handler: ^11.3.0
+  
+  # Home screen widget
+  home_widget: ^0.9.1
 
 dev_dependencies:
   flutter_test:

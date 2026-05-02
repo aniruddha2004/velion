@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:home_widget/home_widget.dart';
 import 'models/news_article.dart';
 import 'models/doc_group.dart';
 import 'models/doc_document.dart';
 import 'screens/main_shell.dart';
 import 'services/objectbox_service.dart';
+import 'services/home_widget_service.dart';
+import 'providers/voice_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,12 +36,40 @@ void main() async {
 
   // Initialize ObjectBox
   await ObjectBoxService().store;
+  
+  // Initialize Home Widget
+  await HomeWidgetService.initialize();
 
   runApp(const ProviderScope(child: VelionApp()));
 }
 
-class VelionApp extends StatelessWidget {
+class VelionApp extends ConsumerStatefulWidget {
   const VelionApp({super.key});
+
+  @override
+  ConsumerState<VelionApp> createState() => _VelionAppState();
+}
+
+class _VelionAppState extends ConsumerState<VelionApp> {
+  @override
+  void initState() {
+    super.initState();
+    _checkWidgetLaunch();
+    _setupWidgetListener();
+  }
+
+  Future<void> _checkWidgetLaunch() async {
+    final launchedFromWidget = await HomeWidgetService.wasLaunchedFromWidget();
+    if (launchedFromWidget) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(voiceProvider.notifier).togglePersistentMode();
+      });
+    }
+  }
+
+  void _setupWidgetListener() {
+    HomeWidgetService.setupWidgetListener(context, ref);
+  }
 
   @override
   Widget build(BuildContext context) {

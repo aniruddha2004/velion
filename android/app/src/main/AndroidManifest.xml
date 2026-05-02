@@ -126,6 +126,18 @@
             
         </activity-alias>
         
+        <!-- Home Widget Receiver -->
+        <receiver
+            android:name="es.antonborri.home_widget.HomeWidgetPlugin"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/voice_widget_provider" />
+        </receiver>
+        
         <meta-data
             android:name="flutterEmbedding"
             android:value="2"/>
