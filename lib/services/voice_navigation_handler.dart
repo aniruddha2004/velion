@@ -6,6 +6,7 @@ import '../screens/doc/doc_group_detail_screen.dart';
 import '../screens/doc/document_viewer_screen.dart';
 import '../providers/news_provider.dart';
 import '../providers/doc_provider.dart';
+import '../providers/voice_provider.dart';
 import '../services/doc_repository.dart';
 import '../services/voice_command_service.dart';
 import '../models/doc_group.dart';
@@ -35,10 +36,6 @@ class VoiceNavigationHandler {
   }
 
   Future<void> _handleViewDocument(VoiceIntent intent) async {
-    final target = intent.target;
-    final groupHint = intent.groupHint;
-
-    // Get all groups using repository
     final repository = _ref.read(docRepositoryProvider);
     final groups = await repository.getAllGroups();
 
@@ -47,35 +44,32 @@ class VoiceNavigationHandler {
       return;
     }
 
-    // Find matching group
-    DocGroup? matchingGroup;
-    
-    // First try exact match on group hint
-    if (groupHint != null && groupHint.isNotEmpty) {
-      try {
-        matchingGroup = groups.firstWhere(
-          (g) => g.name.toLowerCase() == groupHint.toLowerCase(),
-        );
-      } catch (_) {
-        try {
-          matchingGroup = groups.firstWhere(
-            (g) => g.name.toLowerCase().contains(groupHint.toLowerCase()),
-          );
-        } catch (_) {
-          matchingGroup = null;
-        }
-      }
+    final documentsByGroup = <String, List<DocDocument>>{};
+    for (final group in groups) {
+      documentsByGroup[group.id] = await repository.getDocumentsInGroup(group.id);
     }
 
-    // If no group hint or no match, search in all groups
-    if (matchingGroup == null) {
-      // Try to find a group that matches the target name
-      try {
-        matchingGroup = groups.firstWhere(
-          (g) => g.name.toLowerCase().contains(target.toLowerCase()),
-        );
-      } catch (_) {
-        matchingGroup = groups.first;
+    final voiceCommandService = VoiceCommandService(
+      _ref.read(settingsServiceProvider),
+      _ref.read(objectBoxServiceProvider),
+    );
+
+    final resolution = await voiceCommandService.resolveDocumentSelection(
+      intent: intent,
+      groups: groups,
+      documentsByGroup: documentsByGroup,
+    );
+
+    if (resolution == null || !resolution.hasMatch) {
+      _showError('Could not find a matching group');
+      return;
+    }
+
+    DocGroup? matchingGroup;
+    for (final group in groups) {
+      if (group.id == resolution.groupId) {
+        matchingGroup = group;
+        break;
       }
     }
 
@@ -84,11 +78,9 @@ class VoiceNavigationHandler {
       return;
     }
 
-    // Get documents in the matching group
-    final documents = await repository.getDocumentsInGroup(matchingGroup.id);
+    final documents = documentsByGroup[matchingGroup.id] ?? const <DocDocument>[];
 
     if (documents.isEmpty) {
-      // Navigate to group but show empty state
       if (mounted) {
         Navigator.push(
           _context,
@@ -101,32 +93,38 @@ class VoiceNavigationHandler {
       return;
     }
 
-    // Find best matching document
     DocDocument? matchingDoc;
-    
-    // Try exact match first
-    try {
-      matchingDoc = documents.firstWhere(
-        (d) => d.name.toLowerCase().contains(target.toLowerCase()),
-      );
-    } catch (_) {
+    if (resolution.documentId != null) {
+      for (final document in documents) {
+        if (document.id == resolution.documentId) {
+          matchingDoc = document;
+          break;
+        }
+      }
+    }
+
+    if (matchingDoc == null && documents.length == 1) {
       matchingDoc = documents.first;
     }
 
+    if (!mounted) return;
+
     if (matchingDoc == null) {
-      _showError('No documents found');
+      Navigator.push(
+        _context,
+        MaterialPageRoute(
+          builder: (_) => DocGroupDetailScreen(groupId: matchingGroup!.id),
+        ),
+      );
+      _showSuccess('Opened ${matchingGroup.name}');
       return;
     }
-
-    // Open document directly - skip group screen for cleaner UX
-    if (!mounted) return;
 
     final ext = matchingDoc.fileExtension.toLowerCase();
     final isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].contains(ext);
     final isPdf = ext == 'pdf';
 
     if (isImage || isPdf) {
-      // Navigate directly to document viewer
       Navigator.push(
         _context,
         MaterialPageRoute(
@@ -135,7 +133,6 @@ class VoiceNavigationHandler {
       );
       _showSuccess('Opened ${matchingDoc.name}');
     } else {
-      // For non-viewable files, open the group
       Navigator.push(
         _context,
         MaterialPageRoute(
