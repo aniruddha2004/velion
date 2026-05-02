@@ -6,6 +6,7 @@ import '../models/news_article.dart';
 import '../providers/ai_provider.dart';
 import '../providers/news_provider.dart';
 import '../providers/settings_provider.dart';
+import '../widgets/voice_button.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   final NewsArticle article;
@@ -179,6 +180,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
           ],
         ),
+        actions: const [
+          VoiceButton(),
+          SizedBox(width: 8),
+        ],
       ),
       body: _isInitializing
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF6878FF)))

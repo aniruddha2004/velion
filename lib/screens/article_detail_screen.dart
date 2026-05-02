@@ -10,6 +10,7 @@ import '../models/news_article.dart';
 import '../providers/news_provider.dart';
 import '../providers/ai_provider.dart';
 import '../providers/settings_provider.dart';
+import '../widgets/voice_button.dart';
 import 'chat_screen.dart';
 
 class ArticleDetailScreen extends ConsumerStatefulWidget {
@@ -225,6 +226,14 @@ class _ArticleDetailScreenState extends ConsumerState<ArticleDetailScreen> {
               ),
             ),
             actions: [
+              Container(
+                margin: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF16181F).withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const VoiceButton(),
+              ),
               Container(
                 margin: const EdgeInsets.all(8),
                 decoration: BoxDecoration(

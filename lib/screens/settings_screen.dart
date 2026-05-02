@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/settings_provider.dart';
+import '../widgets/voice_button.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -57,26 +58,35 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            // Header
+            // Header with voice button
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-                child: Column(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Settings', style: theme.textTheme.headlineLarge),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Configure your AI assistant',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFFA6ADBD),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Settings', style: theme.textTheme.headlineLarge),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Configure your AI assistant',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: const Color(0xFFA6ADBD),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    const VoiceButton(),
                   ],
                 ),
               ),
             ),
+            const SizedBox(height: 28),
 
             // AI Provider Section
             SliverToBoxAdapter(
