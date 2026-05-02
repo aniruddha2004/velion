@@ -115,10 +115,10 @@ class VoiceNotifier extends StateNotifier<VoiceStateData> {
           _onListeningComplete();
         }
       },
-      listenFor: const Duration(seconds: 10),
-      pauseFor: const Duration(seconds: 3),
-      localeId: 'en_US',
-      cancelOnError: true,
+      listenFor: const Duration(seconds: 30),      // Increased from 10s to 30s
+      pauseFor: const Duration(seconds: 5),         // Increased from 3s to 5s - allows longer pauses between words
+      localeId: null,
+      cancelOnError: false,                         // Don't cancel on error - keep trying
       partialResults: true,
     );
 
