@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/news_provider.dart';
+import '../widgets/voice_button.dart';
 import '../widgets/voice_overlay.dart';
 import 'news/news_home_screen.dart';
 import 'doc/doc_home_screen.dart';
@@ -14,32 +15,35 @@ class DiscoverScreen extends ConsumerWidget {
     final articleCountAsync = ref.watch(articleCountProvider);
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showVoiceOverlay(context),
-        backgroundColor: const Color(0xFF4ECDC4),
-        child: const Icon(Icons.mic, color: Colors.white),
-      ),
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            // Header
+            // Header with voice button
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Discover',
-                      style: theme.textTheme.headlineLarge,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Explore all your features',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: const Color(0xFFA6ADBD),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Discover',
+                            style: theme.textTheme.headlineLarge,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Explore all your features',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: const Color(0xFFA6ADBD),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    const VoiceButton(),
                   ],
                 ),
               ),
@@ -109,15 +113,6 @@ class DiscoverScreen extends ConsumerWidget {
     );
   }
 
-  void _showVoiceOverlay(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => VoiceOverlay(
-        onClose: () => Navigator.pop(context),
-      ),
-    );
-  }
 }
 
 class _FeatureCard extends StatelessWidget {

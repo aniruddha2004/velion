@@ -5,7 +5,7 @@ import '../../providers/news_provider.dart';
 import '../../widgets/link_preview_card.dart';
 import '../../providers/voice_provider.dart';
 import '../../services/voice_navigation_handler.dart';
-import '../../widgets/voice_overlay.dart';
+import '../../widgets/voice_button.dart';
 import '../add_article_screen.dart';
 import '../article_detail_screen.dart';
 
@@ -194,30 +194,33 @@ class _NewsHomeScreenState extends ConsumerState<NewsHomeScreen> with SingleTick
       body: SafeArea(
         child: Column(
           children: [
-            // Header
+            // Header with voice button
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-              child: Column(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('News Feed', style: theme.textTheme.headlineLarge),
-                  ),
-                  const SizedBox(height: 4),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Your saved articles and stories',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFFA6ADBD),
-                      ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('News Feed', style: theme.textTheme.headlineLarge),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Your saved articles and stories',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: const Color(0xFFA6ADBD),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const VoiceButton(),
                 ],
               ),
             ),
+            const SizedBox(height: 20),
 
             // Category tabs
             Padding(
@@ -316,20 +319,8 @@ class _NewsHomeScreenState extends ConsumerState<NewsHomeScreen> with SingleTick
           ],
         ),
       ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Voice button
-          FloatingActionButton.small(
-            onPressed: () => _showVoiceOverlay(context),
-            backgroundColor: const Color(0xFF4ECDC4),
-            heroTag: 'voiceBtn',
-            child: const Icon(Icons.mic, color: Colors.white),
-          ),
-          const SizedBox(height: 8),
-          // Add button (only on non-archived tabs)
-          if (_tabController.index != 3)
-            FloatingActionButton(
+      floatingActionButton: _tabController.index != 3
+          ? FloatingActionButton(
               onPressed: () async {
                 final result = await Navigator.push<bool>(
                   context,
@@ -339,9 +330,8 @@ class _NewsHomeScreenState extends ConsumerState<NewsHomeScreen> with SingleTick
               },
               heroTag: 'addBtn',
               child: const Icon(Icons.add_rounded, size: 28),
-            ),
-        ],
-      ),
+            )
+          : null,
     );
   }
 
@@ -537,16 +527,6 @@ class _NewsHomeScreenState extends ConsumerState<NewsHomeScreen> with SingleTick
           ),
         );
       },
-    );
-  }
-
-  void _showVoiceOverlay(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => VoiceOverlay(
-        onClose: () => Navigator.pop(context),
-      ),
     );
   }
 }
