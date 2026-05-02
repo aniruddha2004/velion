@@ -4,6 +4,7 @@ import 'package:photo_view/photo_view.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:open_filex/open_filex.dart';
 import '../../models/doc_document.dart';
+import '../../widgets/voice_button.dart';
 
 /// Document viewer screen that handles images, PDFs, and other file types
 /// Uses a defensive approach to ensure the viewer stays open until user dismisses it
@@ -132,6 +133,10 @@ class _ImageViewerState extends State<_ImageViewer>
             widget.document.name,
             style: const TextStyle(color: Colors.white, fontSize: 16),
           ),
+          actions: const [
+            VoiceButton(),
+            SizedBox(width: 8),
+          ],
         ),
         body: _hasError ? _buildErrorWidget() : _buildPhotoView(),
       ),
@@ -270,6 +275,10 @@ class _PdfViewerState extends State<_PdfViewer> {
             widget.document.name,
             style: const TextStyle(color: Colors.white),
           ),
+          actions: const [
+            VoiceButton(),
+            SizedBox(width: 8),
+          ],
         ),
         body: Stack(
           children: [
@@ -356,6 +365,10 @@ class _ExternalFileViewer extends StatelessWidget {
             document.name,
             style: const TextStyle(color: Colors.white),
           ),
+          actions: const [
+            VoiceButton(),
+            SizedBox(width: 8),
+          ],
         ),
         body: Center(
           child: Padding(

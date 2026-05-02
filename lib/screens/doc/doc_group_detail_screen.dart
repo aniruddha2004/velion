@@ -7,6 +7,7 @@ import '../../providers/doc_provider.dart';
 import '../../services/doc_repository.dart';
 import '../../models/doc_group.dart';
 import '../../models/doc_document.dart';
+import '../../widgets/voice_button.dart';
 import 'document_viewer_screen.dart';
 
 class DocGroupDetailScreen extends ConsumerStatefulWidget {
@@ -288,6 +289,8 @@ class _DocGroupDetailScreenState extends ConsumerState<DocGroupDetailScreen> {
                       error: (_, __) => const Text('Error', style: TextStyle(color: Colors.white)),
                     ),
                   ),
+                  const VoiceButton(),
+                  const SizedBox(width: 8),
                   IconButton(
                     onPressed: _pickAndUploadDocument,
                     icon: Container(
