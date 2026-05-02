@@ -19,12 +19,14 @@ class VoiceStateData {
   final String recognizedText;
   final String statusMessage;
   final String? errorMessage;
+  final bool isPersistentActive;
 
   VoiceStateData({
     this.state = VoiceState.idle,
     this.recognizedText = '',
     this.statusMessage = '',
     this.errorMessage,
+    this.isPersistentActive = false,
   });
 
   VoiceStateData copyWith({
@@ -32,12 +34,14 @@ class VoiceStateData {
     String? recognizedText,
     String? statusMessage,
     String? errorMessage,
+    bool? isPersistentActive,
   }) {
     return VoiceStateData(
       state: state ?? this.state,
       recognizedText: recognizedText ?? this.recognizedText,
       statusMessage: statusMessage ?? this.statusMessage,
       errorMessage: errorMessage ?? this.errorMessage,
+      isPersistentActive: isPersistentActive ?? this.isPersistentActive,
     );
   }
 }
@@ -169,6 +173,65 @@ class VoiceNotifier extends StateNotifier<VoiceStateData> {
   void reset() {
     _speechToText.stop();
     state = VoiceStateData();
+  }
+
+  void togglePersistentMode() {
+    final newState = !state.isPersistentActive;
+    state = state.copyWith(
+      isPersistentActive: newState,
+      state: newState ? VoiceState.listening : VoiceState.idle,
+      statusMessage: newState ? 'Voice mode active' : '',
+    );
+    
+    if (newState) {
+      _startContinuousListening();
+    } else {
+      _speechToText.stop();
+    }
+  }
+
+  Future<void> _startContinuousListening() async {
+    if (!state.isPersistentActive) return;
+    
+    if (!_isInitialized) {
+      final initialized = await initialize();
+      if (!initialized) {
+        state = state.copyWith(isPersistentActive: false);
+        return;
+      }
+    }
+
+    // Listen for a command
+    final intent = await listenForCommand();
+    
+    if (intent.type != VoiceIntentType.unknown && state.isPersistentActive) {
+      // Execute the intent
+      state = state.copyWith(statusMessage: 'Processing...');
+      
+      // Small delay to show processing state
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Restart listening if still in persistent mode
+      if (state.isPersistentActive) {
+        state = state.copyWith(
+          state: VoiceState.listening,
+          statusMessage: 'Listening...',
+          recognizedText: '',
+        );
+        _startContinuousListening();
+      }
+    } else if (state.isPersistentActive) {
+      // If unknown command, restart listening after brief pause
+      await Future.delayed(const Duration(seconds: 1));
+      if (state.isPersistentActive) {
+        state = state.copyWith(
+          state: VoiceState.listening,
+          statusMessage: 'Listening...',
+          recognizedText: '',
+        );
+        _startContinuousListening();
+      }
+    }
   }
 
   @override
